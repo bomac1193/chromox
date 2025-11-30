@@ -108,25 +108,35 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-lg rounded-2xl border border-neon/30 bg-black/95 p-6 shadow-[0_0_80px_rgba(0,255,180,0.15)]">
-          <Dialog.Title className="mb-6 text-2xl font-semibold text-neon">
-            ⬢ Clone Voice Persona
-          </Dialog.Title>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
 
-          <div className="space-y-5">
+      {/* Modal Container */}
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <Dialog.Panel className="frosted-panel w-full max-w-2xl rounded-3xl p-8 shadow-2xl">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20">
+                <span className="neon-text text-3xl">⬢</span>
+              </div>
+              <div>
+                <Dialog.Title className="text-2xl font-bold tracking-tight text-white">
+                  Clone Voice Persona
+                </Dialog.Title>
+                <p className="text-sm text-white/50">Extract and save voice characteristics</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
             {/* Dropzone */}
             <div>
-              <label className="mb-2 block text-sm text-white/70">Upload Vocal Stem</label>
+              <label className="mb-3 block text-sm font-semibold text-white/80">Upload Vocal Stem</label>
               <div
-                className={`flex h-40 flex-col items-center justify-center rounded-xl border-2 border-dashed transition ${
-                  dragging
-                    ? 'border-neon bg-neon/10'
-                    : vocalFile
-                      ? 'border-neon/50 bg-neon/5'
-                      : 'border-white/15 bg-white/5'
-                }`}
+                className={`glass-dropzone ${dragging ? 'glass-dropzone-active' : ''} ${
+                  vocalFile ? '!border-cyan-400/50' : ''
+                } flex h-48 cursor-pointer flex-col items-center justify-center rounded-2xl transition-all`}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setDragging(true);
@@ -146,16 +156,18 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
               >
                 {vocalFile ? (
                   <div className="text-center">
-                    <p className="text-neon">✓ {vocalFile.name}</p>
-                    <p className="mt-1 text-xs text-white/50">
+                    <div className="mb-2 text-5xl">🎤</div>
+                    <p className="neon-text text-lg font-bold">{vocalFile.name}</p>
+                    <p className="mt-2 text-sm text-white/50">
                       {(vocalFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-white/60">Drop vocal stem or click to browse</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.5em] text-white/40">
-                      WAV • AIFF • MP3 • FLAC
+                    <div className="mb-4 text-6xl opacity-40">📁</div>
+                    <p className="text-base font-medium text-white/70">Drop vocal stem or click to browse</p>
+                    <p className="mt-3 text-xs uppercase tracking-[0.4em] text-white/40">
+                      WAV · AIFF · MP3 · FLAC
                     </p>
                   </div>
                 )}
@@ -164,90 +176,90 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
 
             {/* Analysis Results */}
             {analysis && (
-              <div className="rounded-lg border border-neon/20 bg-neon/5 p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neon">
-                  Voice Analysis Complete
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-white/70">
-                  <div>
-                    Pitch Range:{' '}
-                    <span className="text-white">
+              <div className="glass-card rounded-2xl p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                  <p className="text-sm font-bold uppercase tracking-wider text-cyan-400">
+                    Voice Analysis Complete
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl bg-black/30 p-4">
+                    <p className="text-xs uppercase tracking-wider text-white/40">Pitch Range</p>
+                    <p className="mt-1 text-lg font-bold text-white">
                       {analysis.profile.characteristics.pitchRange.min.toFixed(0)} -{' '}
                       {analysis.profile.characteristics.pitchRange.max.toFixed(0)} Hz
-                    </span>
+                    </p>
                   </div>
-                  <div>
-                    Brightness:{' '}
-                    <span className="text-white">
+                  <div className="rounded-xl bg-black/30 p-4">
+                    <p className="text-xs uppercase tracking-wider text-white/40">Brightness</p>
+                    <p className="mt-1 text-lg font-bold text-cyan-400">
                       {(analysis.profile.characteristics.brightness * 100).toFixed(0)}%
-                    </span>
+                    </p>
                   </div>
-                  <div>
-                    Breathiness:{' '}
-                    <span className="text-white">
+                  <div className="rounded-xl bg-black/30 p-4">
+                    <p className="text-xs uppercase tracking-wider text-white/40">Breathiness</p>
+                    <p className="mt-1 text-lg font-bold text-cyan-400">
                       {(analysis.profile.characteristics.breathiness * 100).toFixed(0)}%
-                    </span>
+                    </p>
                   </div>
-                  <div>
-                    Vibrato:{' '}
-                    <span className="text-white">
+                  <div className="rounded-xl bg-black/30 p-4">
+                    <p className="text-xs uppercase tracking-wider text-white/40">Vibrato</p>
+                    <p className="mt-1 text-lg font-bold text-white">
                       {analysis.profile.characteristics.vibratoRate.toFixed(1)} Hz
-                    </span>
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Name & Description */}
-            <div>
-              <label className="block text-sm text-white/70">
-                Persona Name
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-white/80">Persona Name</label>
                 <input
-                  className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
+                  className="glass-input w-full rounded-xl px-4 py-3 text-white placeholder-white/30"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., Stellar Voice, Dark Prophet..."
+                  placeholder="Stellar Voice, Dream Singer..."
                 />
-              </label>
-            </div>
+              </div>
 
-            <div>
-              <label className="block text-sm text-white/70">
-                Description (Optional)
-                <textarea
-                  className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
-                  rows={2}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-white/80">Description</label>
+                <input
+                  className="glass-input w-full rounded-xl px-4 py-3 text-white placeholder-white/30"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe this voice persona..."
+                  placeholder="Optional description..."
                 />
-              </label>
+              </div>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-                {error}
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 backdrop-blur-xl">
+                <p className="text-sm font-medium text-red-300">{error}</p>
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-4">
               {!analysis ? (
                 <button
                   onClick={handleAnalyze}
                   disabled={!vocalFile || analyzing}
-                  className="flex-1 rounded-md border border-white/20 bg-white/10 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-white hover:bg-white/15 disabled:opacity-30"
+                  className="glass-card-hover flex-1 rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white disabled:opacity-40"
                 >
-                  {analyzing ? 'Analyzing...' : 'Analyze Voice'}
+                  {analyzing ? '⏳ Analyzing Voice...' : '🔍 Analyze Voice'}
                 </button>
               ) : (
                 <button
                   onClick={handleCreatePersona}
                   disabled={!name || creating}
-                  className="flex-1 rounded-md border border-neon/30 bg-neon/20 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-neon hover:bg-neon/30 disabled:opacity-30"
+                  className="glass-button flex-1 rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white disabled:opacity-40"
                 >
-                  {creating ? 'Cloning...' : '⬢ Clone & Save'}
+                  {creating ? '⏳ Cloning Voice...' : '⬢ Clone & Save Persona'}
                 </button>
               )}
               <button
@@ -255,20 +267,32 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
                   resetForm();
                   onClose();
                 }}
-                className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm uppercase tracking-[0.3em] text-white/70 hover:bg-white/10"
+                className="glass-card-hover rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white/70 hover:text-white"
               >
                 Cancel
               </button>
             </div>
 
             {/* Info */}
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/50">
-              <p className="mb-1 font-semibold text-white/70">How it works:</p>
-              <ul className="space-y-1 pl-4">
-                <li>• Upload a clean vocal stem (isolated vocals work best)</li>
-                <li>• Voice analysis extracts pitch, timbre, and vocal characteristics</li>
-                <li>• Persona is saved with voice embedding for future synthesis</li>
-                <li>• Use any lyrics to generate new vocals in this voice</li>
+            <div className="glass-card rounded-xl p-5">
+              <p className="mb-3 text-sm font-bold text-white/80">How Voice Cloning Works:</p>
+              <ul className="space-y-2 text-sm text-white/60">
+                <li className="flex gap-2">
+                  <span className="neon-text">•</span>
+                  <span>Upload clean vocal stems (isolated vocals work best)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="neon-text">•</span>
+                  <span>AI analyzes pitch, timbre, vibrato, and voice characteristics</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="neon-text">•</span>
+                  <span>Voice profile is saved with neural embeddings</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="neon-text">•</span>
+                  <span>Generate unlimited vocals with any lyrics in this voice!</span>
+                </li>
               </ul>
             </div>
           </div>
