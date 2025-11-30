@@ -73,7 +73,7 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
       name,
       description: description || `Cloned voice from ${req.file.originalname}`,
       voice_model_key: '', // Will be set below
-      provider: 'chromox-clone', // Use our custom cloning provider
+      provider: 'elevenlabs', // Use ElevenLabs for high-quality voice cloning
       default_style_controls: defaultControls,
       is_cloned: true,
       voice_profile: voiceProfile,

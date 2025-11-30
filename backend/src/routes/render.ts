@@ -57,7 +57,11 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       guideFilePath: req.file?.path
     });
 
-    res.json({ audioUrl: resultPath });
+    // Convert file path to URL
+    const fileName = resultPath.split('/').pop();
+    const audioUrl = `http://localhost:4414/renders/${fileName}`;
+
+    res.json({ audioUrl });
   } catch (error) {
     console.error('Render failed', error);
     res.status(500).json({ error: 'Render failed', details: (error as Error).message });

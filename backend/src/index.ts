@@ -1,5 +1,7 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import personaRoutes from './routes/personas';
 import renderRoutes from './routes/render';
 import llmRoutes from './routes/llm';
@@ -9,6 +11,9 @@ import { config } from './config';
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from renders directory
+app.use('/renders', express.static(path.join(process.cwd(), 'renders')));
 
 app.use('/api', personaRoutes);
 app.use('/api', renderRoutes);
