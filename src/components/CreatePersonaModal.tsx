@@ -1,5 +1,5 @@
 import { Dialog } from '@headlessui/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleControls } from '../types';
 
 const baseControls: StyleControls = {
@@ -23,6 +23,7 @@ type Props = {
     voice_model_key: string;
     provider: string;
     default_style_controls: StyleControls;
+    image?: File | null;
   }) => void;
 };
 
@@ -31,6 +32,18 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
   const [description, setDescription] = useState('');
   const [voiceKey, setVoiceKey] = useState('');
   const [provider, setProvider] = useState('kits-ai');
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (image) {
+      const url = URL.createObjectURL(image);
+      setImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setImagePreview(null);
+  }, [image]);
 
   function handleSubmit() {
     if (!name || !voiceKey) return;
@@ -39,12 +52,14 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
       description,
       voice_model_key: voiceKey,
       provider,
-      default_style_controls: baseControls
+      default_style_controls: baseControls,
+      image
     });
     setName('');
     setDescription('');
     setVoiceKey('');
     setProvider('kits-ai');
+    setImage(null);
   }
 
   return (
@@ -91,6 +106,46 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                 onChange={(e) => setVoiceKey(e.target.value)}
               />
             </label>
+            <div>
+              <label className="block text-sm text-white/70">Persona Image</label>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Persona preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-lg text-white/50">🎨</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-md border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:border-white/40"
+                  >
+                    Upload
+                  </button>
+                  {image && (
+                    <button
+                      type="button"
+                      onClick={() => setImage(null)}
+                      className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white/60 hover:border-white/30 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setImage(file ?? null);
+                }}
+              />
+            </div>
             <button
               onClick={handleSubmit}
               className="mt-4 w-full rounded-md border border-neon/30 bg-neon/20 py-2 text-sm font-semibold uppercase tracking-[0.5em] text-neon hover:bg-neon/30"

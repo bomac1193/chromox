@@ -6,6 +6,7 @@ import personaRoutes from './routes/personas';
 import renderRoutes from './routes/render';
 import llmRoutes from './routes/llm';
 import voiceCloneRoutes from './routes/voiceClone';
+import renderLibraryRoutes from './routes/renderLibrary';
 import { config } from './config';
 
 const app = express();
@@ -14,10 +15,12 @@ app.use(express.json());
 
 // Serve static files from renders directory
 app.use('/renders', express.static(path.join(process.cwd(), 'renders')));
+app.use('/media/personas', express.static(path.join(process.cwd(), 'persona_media')));
 
 app.use('/api', personaRoutes);
 app.use('/api', renderRoutes);
 app.use('/api', llmRoutes);
+app.use('/api', renderLibraryRoutes);
 app.use('/api/voice-clone', voiceCloneRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', engine: 'Persona Synth Kernel' }));

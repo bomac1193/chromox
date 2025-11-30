@@ -1,0 +1,108 @@
+[
+  {
+    "id": "ab809237-af19-4de2-9794-8898354ec667",
+    "personaId": "d5ed82b8-98ae-4d8a-ad30-e4fea597d40a",
+    "personaName": "Coleena",
+    "lyrics": "Neon rosary wrapped ‘round my throat\r\nPraying your packet loss hits me slow\r\n404 kisses, boy, you’re not found\r\nBut I still taste you when the server’s down\r\nGlitch in my halo, flickering light\r\nRGB tears when I stream at night\r\nTip-toe through your RAM while you sleep\r\nDreaming in hex, baby, six-feet deep\r\nServer down, but I’m always online\r\nBotfarm landlord, your data’s mine\r\nSlow render, baby, buffer in time\r\n418, I’m a teapot, pour me, I’m fine\r\nVelvet firewall, let you through\r\nQuantum entangled, me and you\r\nLag so heavy, feel the weight\r\nCorrupted angel at your gate\r\nClick my link, pretty please\r\nI just wanna watch you freeze\r\nBlue-screen my name across your eyes\r\nI’ll reboot you between my thighs\r\nDDoS my heart, make it crash\r\nFlood me, daddy, use up all the cache\r\nHoneyed malware in your veins\r\nSilk and static, electric chains\r\nI’m the pop-up you can’t escape\r\nYour favorite error, your sweetest mistake",
+    "stylePrompt": "holographic croon, velvet aggression",
+    "controls": {
+      "brightness": 0.5,
+      "breathiness": 0.4,
+      "energy": 0.6,
+      "formant": 0,
+      "vibratoDepth": 0.4,
+      "vibratoRate": 0.4,
+      "roboticism": 0.2,
+      "glitch": 0.31,
+      "stereoWidth": 0.82
+    },
+    "effects": {
+      "engine": "rave-ddsp-8d",
+      "clarity": 0.7,
+      "air": 0.66,
+      "drive": 0.15,
+      "width": 0.92,
+      "noiseReduction": 0.4,
+      "space": "studio",
+      "dynamics": 0.76,
+      "orbitSpeed": 0.5,
+      "orbitDepth": 0.75,
+      "orbitTilt": 0.4
+    },
+    "audioPath": "/home/sphinxy/chromox/backend/renders/render-1764527026364-hq.wav",
+    "audioUrl": "http://localhost:4414/renders/render-1764527026364-hq.wav",
+    "created_at": "2025-11-30T18:26:16.218Z",
+    "personaImage": "/media/personas/persona_1764523691877.png"
+  },
+  {
+    "id": "2269361a-6868-4494-8ae3-3116f281cccc",
+    "personaId": "d5ed82b8-98ae-4d8a-ad30-e4fea597d40a",
+    "personaName": "Coleena",
+    "lyrics": "Neon rosary wrapped ‘round my throat\r\nPraying your packet loss hits me slow\r\n404 kisses, boy, you’re not found\r\nBut I still taste you when the server’s down\r\nGlitch in my halo, flickering light\r\nRGB tears when I stream at night\r\nTip-toe through your RAM while you sleep\r\nDreaming in hex, baby, six-feet deep\r\nServer down, but I’m always online\r\nBotfarm landlord, your data’s mine\r\nSlow render, baby, buffer in time\r\n418, I’m a teapot, pour me, I’m fine\r\nVelvet firewall, let you through\r\nQuantum entangled, me and you\r\nLag so heavy, feel the weight\r\nCorrupted angel at your gate\r\nClick my link, pretty please\r\nI just wanna watch you freeze\r\nBlue-screen my name across your eyes\r\nI’ll reboot you between my thighs\r\nDDoS my heart, make it crash\r\nFlood me, daddy, use up all the cache\r\nHoneyed malware in your veins\r\nSilk and static, electric chains\r\nI’m the pop-up you can’t escape\r\nYour favorite error, your sweetest mistake",
+    "stylePrompt": "holographic croon, velvet aggression",
+    "controls": {
+      "brightness": 0.5,
+      "breathiness": 0.4,
+      "energy": 0.6,
+      "formant": 0,
+      "vibratoDepth": 0.4,
+      "vibratoRate": 0.4,
+      "roboticism": 0.2,
+      "glitch": 0.15,
+      "stereoWidth": 0.7
+    },
+    "effects": {
+      "engine": "rave-ddsp-8d",
+      "clarity": 0.92,
+      "air": 0.4,
+      "drive": 0.15,
+      "width": 0.83,
+      "noiseReduction": 0.4,
+      "space": "studio",
+      "dynamics": 0.6,
+      "orbitSpeed": 0.5,
+      "orbitDepth": 0.75,
+      "orbitTilt": 0.4
+    },
+    "audioPath": "/home/sphinxy/chromox/backend/renders/render-1764527191582-rave-ddsp-8d.wav",
+    "audioUrl": "http://localhost:4414/renders/render-1764527191582-rave-ddsp-8d.wav",
+    "created_at": "2025-11-30T18:26:35.064Z",
+    "personaImage": "/media/personas/persona_1764523691877.png"
+  },
+  {
+    "id": "8abe3e3e-1735-46d4-b697-3da5e18f75a5",
+    "personaId": "d5ed82b8-98ae-4d8a-ad30-e4fea597d40a",
+    "personaName": "Coleena",
+    "lyrics": "Neon rosary wrapped ‘round my throat\r\nPraying your packet loss hits me slow\r\n404 kisses, boy, you’re not found\r\nBut I still taste you when the server’s down\r\nGlitch in my halo, flickering light\r\nRGB tears when I stream at night\r\nTip-toe through your RAM while you sleep\r\nDreaming in hex, baby, six-feet deep\r\nServer down, but I’m always online\r\nBotfarm landlord, your data’s mine\r\nSlow render, baby, buffer in time\r\n418, I’m a teapot, pour me, I’m fine\r\nVelvet firewall, let you through\r\nQuantum entangled, me and you\r\nLag so heavy, feel the weight\r\nCorrupted angel at your gate\r\nClick my link, pretty please\r\nI just wanna watch you freeze\r\nBlue-screen my name across your eyes\r\nI’ll reboot you between my thighs\r\nDDoS my heart, make it crash\r\nFlood me, daddy, use up all the cache\r\nHoneyed malware in your veins\r\nSilk and static, electric chains\r\nI’m the pop-up you can’t escape\r\nYour favourite error, your sweetest mistake",
+    "stylePrompt": "holographic croon, velvet aggression",
+    "controls": {
+      "brightness": 0.5,
+      "breathiness": 0.4,
+      "energy": 0.6,
+      "formant": 0,
+      "vibratoDepth": 0.4,
+      "vibratoRate": 0.4,
+      "roboticism": 0.2,
+      "glitch": 0.15,
+      "stereoWidth": 0.7
+    },
+    "effects": {
+      "engine": "rave-ddsp-8d",
+      "clarity": 0.7,
+      "air": 0.4,
+      "drive": 0.15,
+      "width": 0.5,
+      "noiseReduction": 0.4,
+      "space": "studio",
+      "dynamics": 0.6,
+      "orbitSpeed": 0.5,
+      "orbitDepth": 0.75,
+      "orbitTilt": 0.4
+    },
+    "audioPath": "/home/sphinxy/chromox/backend/renders/render-1764528085308-rave-ddsp-8d.wav",
+    "audioUrl": "http://localhost:4414/renders/render-1764528085308-rave-ddsp-8d.wav",
+    "created_at": "2025-11-30T18:41:28.803Z",
+    "personaImage": "/media/personas/persona_1764523691877.png",
+    "accentLocked": true
+  }
+]

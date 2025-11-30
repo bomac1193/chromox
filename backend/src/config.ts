@@ -5,5 +5,8 @@ export const config = {
   },
   llm: {
     apiKey: process.env.LLM_API_KEY ?? 'demo-llm'
+  },
+  effects: {
+    serviceUrl: process.env.EFFECTS_SERVICE_URL ?? 'http://localhost:5009'
   }
 };

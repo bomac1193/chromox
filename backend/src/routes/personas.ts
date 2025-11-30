@@ -1,8 +1,23 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
 import { z } from 'zod';
 import { createPersona, findPersona, listPersonas } from '../services/personaStore';
 
 const router = Router();
+const mediaDir = path.join(process.cwd(), 'persona_media');
+fs.mkdirSync(mediaDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, mediaDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || '.png';
+      cb(null, `persona_${Date.now()}${ext}`);
+    }
+  })
+});
 
 const personaSchema = z.object({
   name: z.string(),
@@ -19,7 +34,8 @@ const personaSchema = z.object({
     roboticism: z.number(),
     glitch: z.number(),
     stereoWidth: z.number()
-  })
+  }),
+  image_url: z.string().optional()
 });
 
 router.get('/personas', (_req, res) => {
@@ -32,12 +48,31 @@ router.get('/personas/:id', (req, res) => {
   res.json(persona);
 });
 
-router.post('/personas', (req, res) => {
-  const parsed = personaSchema.safeParse(req.body);
+router.post('/personas', upload.single('image'), (req, res) => {
+  let defaultControls: unknown = req.body.default_style_controls;
+
+  if (typeof req.body.default_style_controls === 'string') {
+    try {
+      defaultControls = JSON.parse(req.body.default_style_controls);
+    } catch (error) {
+      return res.status(400).json({ error: 'Invalid default_style_controls payload' });
+    }
+  }
+
+  const payload = {
+    ...req.body,
+    default_style_controls: defaultControls
+  };
+
+  const parsed = personaSchema.safeParse(payload);
   if (!parsed.success) {
     return res.status(400).json(parsed.error.flatten());
   }
-  const persona = createPersona(parsed.data);
+
+  const persona = createPersona({
+    ...parsed.data,
+    image_url: req.file ? `/media/personas/${req.file.filename}` : parsed.data.image_url
+  });
   res.status(201).json(persona);
 });
 

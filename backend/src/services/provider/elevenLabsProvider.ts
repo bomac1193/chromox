@@ -131,7 +131,9 @@ export class ElevenLabsProvider implements SingingProvider {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to list ElevenLabs voices');
+      const errorText = await response.text();
+      console.error(`[ElevenLabs] API Error (${response.status}):`, errorText);
+      throw new Error(`Failed to list ElevenLabs voices: ${response.status} - ${errorText}`);
     }
 
     const data: any = await response.json();

@@ -10,6 +10,27 @@ export type StyleControls = {
   stereoWidth: number;
 };
 
+export type EffectSettings = {
+  engine:
+    | 'chromox-labs'
+    | 'izotope-nectar'
+    | 'waves-clarity'
+    | 'antelope-synergy'
+    | 'rave-ddsp'
+    | 'rave-ddsp-8d'
+    | 'resonance-8d';
+  clarity: number;
+  air: number;
+  drive: number;
+  width: number;
+  noiseReduction: number;
+  space: 'dry' | 'studio' | 'hall' | 'arena';
+  dynamics: number;
+  orbitSpeed?: number;
+  orbitDepth?: number;
+  orbitTilt?: number;
+};
+
 export type VoiceProfile = {
   characteristics: {
     pitchRange: { min: number; max: number; mean: number };
@@ -41,6 +62,7 @@ export type Persona = {
   provider: string;
   default_style_controls: StyleControls;
   created_at: string;
+  image_url?: string;
   is_cloned?: boolean;
   voice_profile?: VoiceProfile;
   clone_source?: 'upload' | 'recording' | 'external';
@@ -52,4 +74,26 @@ export type RenderJob = {
   guideFile?: File;
   stylePrompt: string;
   controls: StyleControls;
+  effects: EffectSettings;
+  label?: string;
+  accent?: string;
+  accentLocked?: boolean;
+};
+
+export type RenderHistoryItem = {
+  id: string;
+  personaId: string;
+  personaName: string;
+  lyrics: string;
+  stylePrompt: string;
+  controls: StyleControls;
+  effects: EffectSettings;
+  label?: string;
+  audioPath: string;
+  audioUrl: string;
+  created_at: string;
+  guideFilePath?: string;
+  personaImage?: string;
+  accent?: string;
+  accentLocked?: boolean;
 };

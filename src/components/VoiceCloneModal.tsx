@@ -1,6 +1,7 @@
 import { Dialog } from '@headlessui/react';
-import { useState, DragEvent } from 'react';
+import { useEffect, useRef, useState, DragEvent } from 'react';
 import { StyleControls } from '../types';
+import { API_HOST } from '../lib/api';
 
 type AnalysisResult = {
   success: boolean;
@@ -24,6 +25,18 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
   const [creating, setCreating] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string>('');
+  const [personaImage, setPersonaImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (personaImage) {
+      const url = URL.createObjectURL(personaImage);
+      setImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setImagePreview(null);
+  }, [personaImage]);
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -45,7 +58,7 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
       const formData = new FormData();
       formData.append('vocal', vocalFile);
 
-      const response = await fetch('http://localhost:4414/api/voice-clone/analyze', {
+      const response = await fetch(`${API_HOST}/api/voice-clone/analyze`, {
         method: 'POST',
         body: formData
       });
@@ -74,8 +87,11 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
       formData.append('vocal', vocalFile);
       formData.append('name', name);
       formData.append('description', description || `Cloned voice from ${vocalFile.name}`);
+      if (personaImage) {
+        formData.append('image', personaImage);
+      }
 
-      const response = await fetch('http://localhost:4414/api/voice-clone/create-persona', {
+      const response = await fetch(`${API_HOST}/api/voice-clone/create-persona`, {
         method: 'POST',
         body: formData
       });
@@ -104,6 +120,7 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
     setVocalFile(null);
     setAnalysis(null);
     setError('');
+    setPersonaImage(null);
   }
 
   return (
@@ -234,6 +251,48 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
                   placeholder="Optional description..."
                 />
               </div>
+            </div>
+
+            {/* Persona Image */}
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-white/80">Persona Image</label>
+              <div className="flex items-center gap-3">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Persona preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl text-white/40">🌀</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="rounded-lg border border-white/30 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:border-white/50"
+                  >
+                    Upload
+                  </button>
+                  {personaImage && (
+                    <button
+                      type="button"
+                      onClick={() => setPersonaImage(null)}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white/60 hover:border-white/30 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  setPersonaImage(file ?? null);
+                }}
+              />
             </div>
 
             {/* Error */}

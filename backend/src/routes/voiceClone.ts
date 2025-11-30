@@ -1,11 +1,33 @@
+import fs from 'fs';
+import path from 'path';
 import { Router } from 'express';
 import multer from 'multer';
 import { analyzeVoiceFromStem, characteristicsToStyleControls, saveVoiceProfile } from '../services/voiceAnalysis';
-import { createPersona } from '../services/personaStore';
+import { createPersona, updatePersona } from '../services/personaStore';
 import { extractVocalStem } from '../services/dsp';
 
 const router = Router();
-const upload = multer({ dest: 'uploads/' });
+const uploadsDir = path.join(process.cwd(), 'uploads');
+const personaMediaDir = path.join(process.cwd(), 'persona_media');
+fs.mkdirSync(uploadsDir, { recursive: true });
+fs.mkdirSync(personaMediaDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, file, cb) => {
+      if (file.fieldname === 'image') {
+        cb(null, personaMediaDir);
+      } else {
+        cb(null, uploadsDir);
+      }
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname) || '.dat';
+      const prefix = file.fieldname === 'image' ? 'persona_' : 'upload_';
+      cb(null, `${prefix}${Date.now()}${ext}`);
+    }
+  })
+});
 
 /**
  * POST /api/voice-clone/analyze
@@ -47,7 +69,13 @@ router.post('/analyze', upload.single('vocal'), async (req, res) => {
  * POST /api/voice-clone/create-persona
  * Creates a new persona from a voice profile analysis.
  */
-router.post('/create-persona', upload.single('vocal'), async (req, res) => {
+router.post(
+  '/create-persona',
+  upload.fields([
+    { name: 'vocal', maxCount: 1 },
+    { name: 'image', maxCount: 1 }
+  ]),
+  async (req, res) => {
   try {
     const { name, description } = req.body;
 
@@ -55,14 +83,17 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
       return res.status(400).json({ error: 'Persona name is required' });
     }
 
-    if (!req.file) {
+    const vocalFile = (req.files as Record<string, Express.Multer.File[]> | undefined)?.['vocal']?.[0];
+    const imageFile = (req.files as Record<string, Express.Multer.File[]> | undefined)?.['image']?.[0];
+
+    if (!vocalFile) {
       return res.status(400).json({ error: 'No vocal file uploaded' });
     }
 
     console.log(`[VoiceClone] Creating cloned persona: ${name}`);
 
     // Extract and analyze vocal
-    const { stemPath } = await extractVocalStem(req.file.path);
+    const { stemPath } = await extractVocalStem(vocalFile.path);
     const voiceProfile = await analyzeVoiceFromStem(stemPath);
 
     // Generate default style controls from voice characteristics
@@ -71,17 +102,19 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
     // Create persona with voice cloning enabled
     const persona = createPersona({
       name,
-      description: description || `Cloned voice from ${req.file.originalname}`,
+      description: description || `Cloned voice from ${vocalFile.originalname}`,
       voice_model_key: '', // Will be set below
-      provider: 'elevenlabs', // Use ElevenLabs for high-quality voice cloning
+      provider: 'elevenlabs', // Use ElevenLabs voice cloning (Creator plan)
       default_style_controls: defaultControls,
       is_cloned: true,
       voice_profile: voiceProfile,
-      clone_source: 'upload'
+      clone_source: 'upload',
+      image_url: imageFile ? `/media/personas/${path.basename(imageFile.path)}` : undefined
     });
 
-    // Update voice_model_key to match persona ID for consistency
-    persona.voice_model_key = `cloned_${persona.id}`;
+    // Update voice_model_key to match persona ID for consistency and persist
+    const updatedPersona =
+      updatePersona(persona.id, { voice_model_key: `cloned_${persona.id}` }) ?? persona;
 
     // Save voice profile to disk for persistence
     saveVoiceProfile(persona.id, voiceProfile);
@@ -90,7 +123,7 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
 
     res.json({
       success: true,
-      persona,
+      persona: updatedPersona,
       message: `Voice cloned successfully! Persona "${name}" is ready to use.`
     });
   } catch (error) {
@@ -100,7 +133,8 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
       details: (error as Error).message
     });
   }
-});
+  }
+);
 
 /**
  * POST /api/voice-clone/retrain
