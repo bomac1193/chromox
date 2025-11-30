@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/v2/schema.json",
+  "productName": "Chromox",
+  "version": "0.1.0",
+  "identifier": "com.chromox.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Chromox Studio",
+        "width": 1280,
+        "height": 720,
+        "decorations": true,
+        "transparent": false,
+        "resizable": true
+      }
+    ]
+  }
+}
