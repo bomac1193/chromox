@@ -1,3 +1,11 @@
+import fs from 'fs';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
+
+const OPENAI_TRANSCRIBE_URL =
+  process.env.OPENAI_TRANSCRIBE_URL ?? 'https://api.openai.com/v1/audio/transcriptions';
+const OPENAI_TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL ?? 'whisper-1';
+
 export async function extractVocalStem(filePath: string) {
   // Placeholder for Nebula Tone Network chromatical separation.
   return { stemPath: filePath, quality: 0.92 };
@@ -12,8 +20,40 @@ export async function extractPitchAndTiming(stemPath: string) {
 }
 
 export async function transcribeLyrics(stemPath: string) {
-  return {
-    transcript: 'auto-transcribed lyrics',
-    confidence: 0.81
-  };
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return { transcript: 'auto-transcribed lyrics', confidence: 0.5 };
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('model', OPENAI_TRANSCRIBE_MODEL);
+    formData.append('response_format', 'json');
+    formData.append('temperature', '0');
+    formData.append('file', fs.createReadStream(stemPath));
+
+    const response = await fetch(OPENAI_TRANSCRIBE_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: formData as unknown as FormData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Transcription failed (${response.status})`);
+    }
+
+    const data = (await response.json()) as { text?: string };
+    return {
+      transcript: data.text ?? '',
+      confidence: data.text ? 0.97 : 0.5
+    };
+  } catch (error) {
+    console.error('[DSP] Transcription fallback triggered:', error);
+    return {
+      transcript: 'auto-transcribed lyrics',
+      confidence: 0.5
+    };
+  }
 }

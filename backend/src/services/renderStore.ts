@@ -51,6 +51,10 @@ type CreateRenderJobInput = {
   personaImage?: string;
   accent?: string;
   accentLocked?: boolean;
+  guideSampleId?: string;
+  guideMatchIntensity?: number;
+  guideUseLyrics?: boolean;
+  guideTempo?: number;
 };
 
 export function createRenderJob(input: CreateRenderJobInput) {
@@ -69,7 +73,11 @@ export function createRenderJob(input: CreateRenderJobInput) {
     guideFilePath: input.guideFilePath,
     personaImage: input.personaImage,
     accent: input.accent,
-    accentLocked: input.accentLocked
+    accentLocked: input.accentLocked,
+    guideSampleId: input.guideSampleId,
+    guideMatchIntensity: input.guideMatchIntensity,
+    guideUseLyrics: input.guideUseLyrics,
+    guideTempo: input.guideTempo
   };
   renders.push(record);
   persist();

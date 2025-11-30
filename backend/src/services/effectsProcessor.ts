@@ -9,6 +9,7 @@ const execAsync = promisify(exec);
 
 export const defaultEffectSettings: EffectSettings = {
   engine: 'rave-ddsp-8d',
+  preset: 'clean',
   clarity: 0.7,
   air: 0.4,
   drive: 0.15,
@@ -18,7 +19,8 @@ export const defaultEffectSettings: EffectSettings = {
   dynamics: 0.6,
   orbitSpeed: 0.5,
   orbitDepth: 0.8,
-  orbitTilt: 0.5
+  orbitTilt: 0.5,
+  bypassEffects: false
 };
 
 function clamp(value: number, min = 0, max = 1) {
@@ -54,14 +56,61 @@ function buildFilterChain(settings: EffectSettings) {
   return filters.join(',');
 }
 
+function applyPreset(settings: EffectSettings): EffectSettings {
+  switch (settings.preset) {
+    case 'vintage':
+      return {
+        ...settings,
+        clarity: 0.4,
+        air: 0.3,
+        drive: 0.35,
+        width: 0.45,
+        noiseReduction: 0.2,
+        space: 'hall',
+        dynamics: 0.5
+      };
+    case 'club':
+      return {
+        ...settings,
+        clarity: 0.8,
+        air: 0.6,
+        drive: 0.25,
+        width: 0.8,
+        noiseReduction: 0.3,
+        space: 'arena',
+        dynamics: 0.7
+      };
+    case 'raw':
+      return {
+        ...settings,
+        clarity: 0.35,
+        air: 0.2,
+        drive: 0.1,
+        width: 0.5,
+        noiseReduction: 0.1,
+        space: 'dry',
+        dynamics: 0.4
+      };
+    case 'clean':
+    default:
+      return settings;
+  }
+}
+
 export async function applyAdvancedEffects(
   inputPath: string,
   settings: EffectSettings,
   previewSeconds?: number
 ): Promise<string> {
+  if (settings?.bypassEffects) {
+    return inputPath;
+  }
+
+  const appliedSettings = applyPreset(settings);
+
   if (settings.engine && settings.engine !== 'chromox-labs') {
     try {
-      return await processWithAdvancedEngine(inputPath, settings, previewSeconds);
+      return await processWithAdvancedEngine(inputPath, appliedSettings, previewSeconds);
     } catch (error) {
       console.error('[Effects] External engine failed, falling back to Chromox Labs chain.', error);
     }
@@ -71,7 +120,7 @@ export async function applyAdvancedEffects(
   const fileName = path.basename(inputPath, path.extname(inputPath));
   const outputPath = path.join(targetDir, `${fileName}-hq.wav`);
 
-  const filters = buildFilterChain(settings);
+  const filters = buildFilterChain(appliedSettings);
   const command = `ffmpeg -y -hide_banner -loglevel error -i "${inputPath}" -af "${filters}" -c:a pcm_s24le "${outputPath}"`;
 
   try {

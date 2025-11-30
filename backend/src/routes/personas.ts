@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { z } from 'zod';
-import { createPersona, findPersona, listPersonas } from '../services/personaStore';
+import { createPersona, findPersona, listPersonas, updatePersona } from '../services/personaStore';
 
 const router = Router();
 const mediaDir = path.join(process.cwd(), 'persona_media');
@@ -18,6 +18,14 @@ const upload = multer({
     }
   })
 });
+
+const focusField = z
+  .preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const num = typeof value === 'string' ? Number(value) : (value as number);
+    return Number.isFinite(num) ? num : undefined;
+  }, z.number().min(0).max(100))
+  .optional();
 
 const personaSchema = z.object({
   name: z.string(),
@@ -35,8 +43,12 @@ const personaSchema = z.object({
     glitch: z.number(),
     stereoWidth: z.number()
   }),
-  image_url: z.string().optional()
+  image_url: z.string().optional(),
+  image_focus_x: focusField,
+  image_focus_y: focusField
 });
+
+const personaUpdateSchema = personaSchema.partial();
 
 router.get('/personas', (_req, res) => {
   res.json(listPersonas());
@@ -74,6 +86,40 @@ router.post('/personas', upload.single('image'), (req, res) => {
     image_url: req.file ? `/media/personas/${req.file.filename}` : parsed.data.image_url
   });
   res.status(201).json(persona);
+});
+
+router.put('/personas/:id', upload.single('image'), (req, res) => {
+  const persona = findPersona(req.params.id);
+  if (!persona) {
+    return res.status(404).json({ error: 'Persona not found' });
+  }
+
+  let defaultControls: unknown = req.body.default_style_controls;
+
+  if (typeof req.body.default_style_controls === 'string') {
+    try {
+      defaultControls = JSON.parse(req.body.default_style_controls);
+    } catch {
+      return res.status(400).json({ error: 'Invalid default_style_controls payload' });
+    }
+  }
+
+  const payload = {
+    ...req.body,
+    default_style_controls: defaultControls
+  };
+
+  const parsed = personaUpdateSchema.safeParse(payload);
+  if (!parsed.success) {
+    return res.status(400).json(parsed.error.flatten());
+  }
+
+  const updated = updatePersona(persona.id, {
+    ...parsed.data,
+    image_url: req.file ? `/media/personas/${req.file.filename}` : parsed.data.image_url
+  });
+
+  res.json(updated);
 });
 
 export default router;

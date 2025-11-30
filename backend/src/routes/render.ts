@@ -26,6 +26,16 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       }
     }
     const previewSeconds = req.body.previewSeconds ? Number(req.body.previewSeconds) : undefined;
+    const guideSampleId = req.body.guideSampleId;
+    const guideMatchIntensity = req.body.guideMatchIntensity
+      ? Number(req.body.guideMatchIntensity)
+      : undefined;
+    const guideTempo = req.body.guideTempo ? Number(req.body.guideTempo) : undefined;
+    const guideSample = guideSampleId
+      ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
+      : undefined;
+    const guideFilePath = guideSample?.path || req.file?.path;
+    const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';
 
@@ -50,10 +60,14 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       controls,
       effects,
       label: req.body.label,
-      guideFilePath: req.file?.path,
+      guideFilePath,
       previewSeconds,
       accent,
-      accentLocked
+      accentLocked,
+      guideSampleId,
+      guideMatchIntensity,
+      guideUseLyrics,
+      guideTempo
     });
 
     // Convert file path to URL
@@ -70,10 +84,14 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       audioPath: resultPath,
       audioUrl,
       label: req.body.label,
-      guideFilePath: req.file?.path,
+      guideFilePath,
       personaImage: persona.image_url,
       accent,
-      accentLocked
+      accentLocked,
+      guideSampleId,
+      guideMatchIntensity,
+      guideUseLyrics,
+      guideTempo
     });
 
     res.json({ audioUrl, render: renderRecord });
@@ -99,6 +117,16 @@ router.post('/render/preview', upload.single('guide'), async (req, res) => {
       }
     }
     const previewSeconds = Number(req.body.previewSeconds ?? 12);
+    const guideSampleId = req.body.guideSampleId;
+    const guideMatchIntensity = req.body.guideMatchIntensity
+      ? Number(req.body.guideMatchIntensity)
+      : undefined;
+    const guideTempo = req.body.guideTempo ? Number(req.body.guideTempo) : undefined;
+    const guideSample = guideSampleId
+      ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
+      : undefined;
+    const guideFilePath = guideSample?.path || req.file?.path;
+    const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';
 
@@ -113,10 +141,14 @@ router.post('/render/preview', upload.single('guide'), async (req, res) => {
       controls,
       effects,
       label: req.body.label,
-      guideFilePath: req.file?.path,
+      guideFilePath,
       previewSeconds,
       accent,
-      accentLocked
+      accentLocked,
+      guideSampleId,
+      guideMatchIntensity,
+      guideUseLyrics,
+      guideTempo
     });
 
     const fileName = resultPath.split('/').pop();

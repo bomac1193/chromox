@@ -6,6 +6,7 @@ import { VoiceCloneModal } from './components/VoiceCloneModal';
 import {
   API_HOST,
   createPersona,
+  updatePersona,
   fetchPersonas,
   fetchRenderHistory,
   renderPerformance,
@@ -14,6 +15,7 @@ import {
   previewPerformance
 } from './lib/api';
 import { DownloadLibraryDrawer } from './components/DownloadLibraryDrawer';
+import { EditPersonaModal } from './components/EditPersonaModal';
 
 export default function App() {
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -23,6 +25,7 @@ export default function App() {
   const [downloadsOpen, setDownloadsOpen] = useState(false);
   const [renderHistory, setRenderHistory] = useState<RenderHistoryItem[]>([]);
   const [prefillJob, setPrefillJob] = useState<RenderHistoryItem | null>(null);
+  const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   function handlePrefillConsumed() {
     setPrefillJob(null);
   }
@@ -53,6 +56,23 @@ export default function App() {
     setForgeOpen(false);
   }
 
+  async function handleEditPersona(
+    id: string,
+    payload: {
+      name: string;
+      description: string;
+      provider: string;
+      voice_model_key: string;
+      image?: File | null;
+      image_focus_x?: number;
+      image_focus_y?: number;
+    }
+  ) {
+    const updated = await updatePersona(id, payload);
+    setPersonas((prev) => prev.map((persona) => (persona.id === updated.id ? updated : persona)));
+    setEditingPersona(null);
+  }
+
   async function refreshDownloads() {
     const history = await fetchRenderHistory();
     setRenderHistory(history);
@@ -70,6 +90,9 @@ export default function App() {
 
   const activePersona = personas.find((p) => p.id === activePersonaId);
   const activePersonaImage = activePersona?.image_url ? `${API_HOST}${activePersona.image_url}` : undefined;
+  const objectPositionStyle = (persona?: Persona) => ({
+    objectPosition: `${persona?.image_focus_x ?? 50}% ${persona?.image_focus_y ?? 50}%`
+  });
 
   return (
     <div className="min-h-screen text-white">
@@ -150,6 +173,7 @@ export default function App() {
                           src={imageSrc}
                           alt={`${persona.name} avatar`}
                           className="h-full w-full object-cover"
+                          style={objectPositionStyle(persona)}
                           loading="lazy"
                         />
                       ) : persona.is_cloned ? (
@@ -210,6 +234,7 @@ export default function App() {
                         src={activePersonaImage}
                         alt={`${activePersona.name} avatar`}
                         className="h-full w-full object-cover"
+                        style={objectPositionStyle(activePersona)}
                       />
                     ) : activePersona.is_cloned ? (
                       <span className="neon-text text-3xl">⬢</span>
@@ -232,6 +257,12 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+                <button
+                  onClick={() => setEditingPersona(activePersona)}
+                  className="rounded-xl border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-white/70 transition hover:border-white/50 hover:text-white"
+                >
+                  Edit Persona
+                </button>
               </div>
 
               {/* Studio Panel */}
@@ -245,6 +276,7 @@ export default function App() {
                 prefill={prefillJob}
                 onPrefillConsumed={handlePrefillConsumed}
                 onPreview={previewPerformance}
+                onGuideLibraryUpdated={refresh}
               />
             </div>
           ) : (
@@ -276,6 +308,12 @@ export default function App() {
       {/* Modals */}
       <CreatePersonaModal open={forgeOpen} onClose={() => setForgeOpen(false)} onSubmit={handleCreate} />
       <VoiceCloneModal open={cloneOpen} onClose={() => setCloneOpen(false)} onPersonaCreated={refresh} />
+      <EditPersonaModal
+        open={Boolean(editingPersona)}
+        persona={editingPersona}
+        onClose={() => setEditingPersona(null)}
+        onSubmit={handleEditPersona}
+      />
       <DownloadLibraryDrawer
         open={downloadsOpen}
         onClose={() => setDownloadsOpen(false)}

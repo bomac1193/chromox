@@ -19,6 +19,7 @@ export type EffectSettings = {
     | 'rave-ddsp'
     | 'rave-ddsp-8d'
     | 'resonance-8d';
+  preset?: 'clean' | 'vintage' | 'club' | 'raw' | 'shimmer-stack' | 'harmonic-orbit' | 'pitch-warp' | 'choir-cloud' | '8d-swarm';
   clarity: number;
   air: number;
   drive: number;
@@ -29,6 +30,15 @@ export type EffectSettings = {
   orbitSpeed?: number;
   orbitDepth?: number;
   orbitTilt?: number;
+  bypassEffects?: boolean;
+};
+
+export type GuideSample = {
+  id: string;
+  name: string;
+  originalName: string;
+  path: string;
+  uploaded_at: string;
 };
 
 export type VoiceProfile = {
@@ -63,10 +73,13 @@ export type Persona = {
   default_style_controls: StyleControls;
   created_at: string;
   image_url?: string;
+  image_focus_x?: number;
+  image_focus_y?: number;
   // Voice cloning fields
   is_cloned?: boolean;
   voice_profile?: VoiceProfile;
   clone_source?: 'upload' | 'recording' | 'external';
+  guide_samples?: GuideSample[];
 };
 
 export type RenderPayload = {
@@ -81,6 +94,10 @@ export type RenderPayload = {
   previewSeconds?: number;
   accent?: string;
   accentLocked?: boolean;
+  guideSampleId?: string;
+  guideMatchIntensity?: number;
+  guideUseLyrics?: boolean;
+  guideTempo?: number;
 };
 
 export type RenderJobRecord = {
@@ -99,4 +116,8 @@ export type RenderJobRecord = {
   personaImage?: string;
   accent?: string;
   accentLocked?: boolean;
+  guideSampleId?: string;
+  guideMatchIntensity?: number;
+  guideUseLyrics?: boolean;
+  guideTempo?: number;
 };

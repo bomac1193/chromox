@@ -5,26 +5,27 @@ type MeterProps = {
 };
 
 export function Meter({ active }: MeterProps) {
-  const [levels, setLevels] = useState(() => Array(20).fill(0));
+  const [progress, setProgress] = useState(0.2);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      setProgress(0.2);
+      return;
+    }
     const interval = setInterval(() => {
-      setLevels((prev) => prev.map((_, idx) => (Math.sin(Date.now() / 150 + idx) + 1) / 2));
-    }, 120);
+      const t = Date.now() / 600;
+      setProgress((Math.sin(t) + 1) / 2);
+    }, 80);
     return () => clearInterval(interval);
   }, [active]);
 
   return (
-    <div className="flex h-24 gap-1 rounded-xl border border-white/10 bg-gradient-to-b from-black/40 to-black/70 p-2">
-      {levels.map((value, index) => (
-        <div key={index} className="flex-1 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="w-full rounded-full bg-gradient-to-t from-magma to-neon"
-            style={{ height: `${Math.round(value * 100)}%` }}
-          ></div>
-        </div>
-      ))}
+    <div className="relative h-4 w-full overflow-hidden rounded-full border border-white/15 bg-slate-950/70">
+      <div className="absolute inset-0 animate-pulse-slow bg-gradient-to-r from-purple-500/10 via-cyan-400/10 to-purple-500/10 blur-xl" />
+      <div
+        className="relative z-10 h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_25px_rgba(56,189,248,0.4)] transition-all duration-150"
+        style={{ width: `${Math.max(5, Math.round(progress * 100))}%` }}
+      />
     </div>
   );
 }

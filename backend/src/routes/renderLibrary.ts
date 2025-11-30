@@ -37,12 +37,26 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
       ? { ...defaultEffectSettings, ...JSON.parse(overrides.effects) }
       : original.effects ?? { ...defaultEffectSettings };
 
-    const accent =
-      overrides.accent ?? original.accent;
+    const accent = overrides.accent ?? original.accent;
     const accentLocked =
-      overrides.accentLocked !== undefined
-        ? overrides.accentLocked === 'true'
-        : original.accentLocked;
+      overrides.accentLocked !== undefined ? overrides.accentLocked === 'true' : original.accentLocked;
+    const guideMatchIntensity =
+      overrides.guideMatchIntensity !== undefined
+        ? Number(overrides.guideMatchIntensity)
+        : original.guideMatchIntensity;
+    const guideSampleId = overrides.guideSampleId ?? original.guideSampleId;
+    const guideSample = guideSampleId
+      ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
+      : undefined;
+    const guideFilePath = guideSample?.path ?? req.file?.path ?? original.guideFilePath;
+    const guideUseLyrics =
+      overrides.guideUseLyrics !== undefined
+        ? overrides.guideUseLyrics === 'true'
+        : original.guideUseLyrics;
+    const guideTempo =
+      overrides.guideTempo !== undefined
+        ? Number(overrides.guideTempo)
+        : original.guideTempo;
 
     const provider = resolveProvider(persona.provider);
     const pipeline = new ChromaticCorePipeline(provider);
@@ -55,9 +69,13 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
       controls,
       effects,
       label: overrides.label ?? original.label,
-      guideFilePath: req.file?.path ?? original.guideFilePath,
+      guideFilePath,
       accent,
-      accentLocked
+      accentLocked,
+      guideSampleId,
+      guideMatchIntensity,
+      guideUseLyrics,
+      guideTempo
     });
 
     const fileName = resultPath.split('/').pop();
@@ -73,13 +91,14 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
       audioPath: resultPath,
       audioUrl,
       label: overrides.label ?? original.label,
-      guideFilePath: req.file?.path ?? original.guideFilePath,
+      guideFilePath,
       personaImage: persona.image_url,
-      accent: overrides.accent ?? original.accent,
-      accentLocked:
-        overrides.accentLocked !== undefined
-          ? overrides.accentLocked === 'true'
-          : original.accentLocked
+      accent,
+      accentLocked,
+      guideSampleId,
+      guideMatchIntensity,
+      guideUseLyrics,
+      guideTempo
     });
 
     res.json({ audioUrl, render: newRecord });

@@ -25,6 +25,17 @@ export function DownloadLibraryDrawer({
   const [search, setSearch] = useState('');
   const [personaFilter, setPersonaFilter] = useState<string>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const presetLabels: Record<string, string> = {
+    clean: 'Clean Studio',
+    vintage: 'Vintage',
+    club: 'Club Stack',
+    raw: 'Raw Direct',
+    'shimmer-stack': 'Shimmer Stack',
+    'harmonic-orbit': 'Harmonic Orbit',
+    'pitch-warp': 'Pitch Warp',
+    'choir-cloud': 'Choir Cloud',
+    '8d-swarm': '8D Swarm'
+  };
 
   const filtered = useMemo(() => {
     return jobs.filter((job) => {
@@ -80,8 +91,11 @@ export function DownloadLibraryDrawer({
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-3">
-          {filtered.map((job) => (
-            <div key={job.id} className="glass-card rounded-2xl border border-white/10 p-4">
+          {filtered.map((job) => {
+            const persona = personas.find((p) => p.id === job.personaId);
+            const guideSampleName = persona?.guide_samples?.find((sample) => sample.id === job.guideSampleId)?.name;
+            return (
+              <div key={job.id} className="glass-card rounded-2xl border border-white/10 p-4">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-widest text-white/40">{job.personaName}</p>
@@ -123,6 +137,14 @@ export function DownloadLibraryDrawer({
                 <span className="rounded-full bg-white/5 px-3 py-1">
                   Style: <span className="text-white/80">{job.stylePrompt}</span>
                 </span>
+                {job.effects.preset && (
+                  <span className="rounded-full bg-white/5 px-3 py-1">
+                    Preset:{' '}
+                    <span className="text-white/80">
+                      {presetLabels[job.effects.preset] ?? job.effects.preset}
+                    </span>
+                  </span>
+                )}
                 <span className="rounded-full bg-white/5 px-3 py-1">
                   Engine: <span className="text-white/80">{job.effects.engine}</span>
                 </span>
@@ -132,9 +154,28 @@ export function DownloadLibraryDrawer({
                     {job.accentLocked ? ' 🔒' : ''}
                   </span>
                 )}
+                {guideSampleName && (
+                  <span className="rounded-full bg-white/5 px-3 py-1">
+                    Guide: <span className="text-white/80">{guideSampleName}</span>
+                  </span>
+                )}
+                {job.guideMatchIntensity !== undefined && (
+                  <span className="rounded-full bg-white/5 px-3 py-1">
+                    Match: <span className="text-white/80">{Math.round(job.guideMatchIntensity * 100)}%</span>
+                  </span>
+                )}
+                {job.guideUseLyrics && (
+                  <span className="rounded-full bg-white/5 px-3 py-1 text-white/90">Guide Lyrics</span>
+                )}
+                {job.guideTempo && Math.abs(job.guideTempo - 1) > 0.01 && (
+                  <span className="rounded-full bg-white/5 px-3 py-1">
+                    Tempo: <span className="text-white/80">{job.guideTempo.toFixed(2)}x</span>
+                  </span>
+                )}
               </div>
             </div>
-          ))}
+          );
+          })}
           {filtered.length === 0 && (
             <div className="rounded-2xl border border-white/10 p-6 text-center text-white/60">
               No renders yet. Create one in the studio to populate your library.

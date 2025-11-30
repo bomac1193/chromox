@@ -7,6 +7,7 @@ import renderRoutes from './routes/render';
 import llmRoutes from './routes/llm';
 import voiceCloneRoutes from './routes/voiceClone';
 import renderLibraryRoutes from './routes/renderLibrary';
+import personaGuideRoutes from './routes/personaGuides';
 import { config } from './config';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api', personaRoutes);
 app.use('/api', renderRoutes);
 app.use('/api', llmRoutes);
 app.use('/api', renderLibraryRoutes);
+app.use('/api', personaGuideRoutes);
 app.use('/api/voice-clone', voiceCloneRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', engine: 'Persona Synth Kernel' }));

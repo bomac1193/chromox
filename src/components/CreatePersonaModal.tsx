@@ -1,6 +1,7 @@
 import { Dialog } from '@headlessui/react';
 import { useEffect, useRef, useState } from 'react';
 import { StyleControls } from '../types';
+import { generatePersonaIdea } from '../lib/api';
 
 const baseControls: StyleControls = {
   brightness: 0.5,
@@ -24,6 +25,8 @@ type Props = {
     provider: string;
     default_style_controls: StyleControls;
     image?: File | null;
+    image_focus_x?: number;
+    image_focus_y?: number;
   }) => void;
 };
 
@@ -35,6 +38,11 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [randomizing, setRandomizing] = useState(false);
+  const [useMononym, setUseMononym] = useState(false);
+  const [imageFocus, setImageFocus] = useState({ x: 50, y: 50 });
+  const [dragging, setDragging] = useState(false);
+  const previewRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (image) {
@@ -43,7 +51,42 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
       return () => URL.revokeObjectURL(url);
     }
     setImagePreview(null);
+    setImageFocus({ x: 50, y: 50 });
   }, [image]);
+
+  useEffect(() => {
+    function stopDragging() {
+      setDragging(false);
+    }
+    window.addEventListener('mouseup', stopDragging);
+    window.addEventListener('touchend', stopDragging);
+    return () => {
+      window.removeEventListener('mouseup', stopDragging);
+      window.removeEventListener('touchend', stopDragging);
+    };
+  }, []);
+
+  function updateFocusFromPoint(clientX: number, clientY: number) {
+    const rect = previewRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    setImageFocus({
+      x: Math.min(100, Math.max(0, x)),
+      y: Math.min(100, Math.max(0, y))
+    });
+  }
+
+  function handlePointerDown(clientX: number, clientY: number) {
+    if (!imagePreview) return;
+    setDragging(true);
+    updateFocusFromPoint(clientX, clientY);
+  }
+
+  function handlePointerMove(clientX: number, clientY: number) {
+    if (!dragging) return;
+    updateFocusFromPoint(clientX, clientY);
+  }
 
   function handleSubmit() {
     if (!name || !voiceKey) return;
@@ -53,13 +96,27 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
       voice_model_key: voiceKey,
       provider,
       default_style_controls: baseControls,
-      image
+      image,
+      image_focus_x: imageFocus.x,
+      image_focus_y: imageFocus.y
     });
     setName('');
     setDescription('');
     setVoiceKey('');
     setProvider('kits-ai');
     setImage(null);
+    setImageFocus({ x: 50, y: 50 });
+  }
+
+  async function handleRandomize() {
+    try {
+      setRandomizing(true);
+      const idea = await generatePersonaIdea({ seed: description, mononym: useMononym });
+      setName(idea.name);
+      setDescription(idea.description);
+    } finally {
+      setRandomizing(false);
+    }
   }
 
   return (
@@ -67,7 +124,28 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
       <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-black/90 p-6 shadow-[0_0_65px_rgba(0,0,0,0.65)]">
-          <Dialog.Title className="mb-6 text-2xl font-semibold text-white">Forge Persona Artifact</Dialog.Title>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <Dialog.Title className="text-2xl font-semibold text-white">Forge Persona Artifact</Dialog.Title>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-white/60">
+                <input
+                  type="checkbox"
+                  checked={useMononym}
+                  onChange={(e) => setUseMononym(e.target.checked)}
+                  className="accent-cyan-400"
+                />
+                Mononym
+              </label>
+              <button
+                type="button"
+                onClick={handleRandomize}
+                disabled={randomizing}
+                className="rounded-md border border-white/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.4em] text-white/80 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {randomizing ? 'Weaving…' : 'AI Randomize'}
+              </button>
+            </div>
+          </div>
           <div className="space-y-4">
             <label className="block text-sm text-white/70">
               Name
@@ -109,11 +187,34 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
             <div>
               <label className="block text-sm text-white/70">Persona Image</label>
               <div className="mt-2 flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                <div
+                  ref={previewRef}
+                  className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                  onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
+                  onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    handlePointerDown(touch.clientX, touch.clientY);
+                  }}
+                  onTouchMove={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    handlePointerMove(touch.clientX, touch.clientY);
+                  }}
+                >
                   {imagePreview ? (
-                    <img src={imagePreview} alt="Persona preview" className="h-full w-full object-cover" />
+                    <img
+                      src={imagePreview}
+                      alt="Persona preview"
+                      className="h-full w-full select-none object-cover"
+                      style={{ objectPosition: `${imageFocus.x}% ${imageFocus.y}%` }}
+                    />
                   ) : (
                     <span className="text-lg text-white/50">🎨</span>
+                  )}
+                  {imagePreview && (
+                    <div className="pointer-events-none absolute inset-0 border border-white/20 shadow-inner" />
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -135,6 +236,9 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                   )}
                 </div>
               </div>
+              {imagePreview && (
+                <p className="mt-2 text-xs text-white/60">Drag inside the square to set the saved framing.</p>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"

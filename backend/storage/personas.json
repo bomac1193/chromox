@@ -1,20 +1,9 @@
 [
   {
-    "name": "Coleena",
-    "description": "Cloned voice from I Got Trust Issues with Bluetooth (Orginal) (2)_vocals_split_by_lalalai.mp3",
+    "name": "Echoette",
+    "description": "Lo-fi vtuber specter armed with pastel synth stabs, crunchy tape hiss, and synthwave slay energy for late-night setlists",
     "voice_model_key": "cloned_d5ed82b8-98ae-4d8a-ad30-e4fea597d40a",
     "provider": "elevenlabs",
-    "default_style_controls": {
-      "brightness": 0.6,
-      "breathiness": 0.3,
-      "energy": 0.5,
-      "formant": 0.2,
-      "vibratoDepth": 0.3,
-      "vibratoRate": 0.55,
-      "roboticism": 0,
-      "glitch": 0,
-      "stereoWidth": 0.5
-    },
     "is_cloned": true,
     "voice_profile": {
       "characteristics": {
@@ -318,8 +307,33 @@
       "analysisTimestamp": "2025-11-30T17:28:18.445Z"
     },
     "clone_source": "upload",
-    "image_url": "/media/personas/persona_1764523691877.png",
     "id": "d5ed82b8-98ae-4d8a-ad30-e4fea597d40a",
-    "created_at": "2025-11-30T17:28:18.445Z"
+    "created_at": "2025-11-30T17:28:18.445Z",
+    "guide_samples": [
+      {
+        "id": "51360ed3-1080-4eba-9c20-b5f1df8f3a9a",
+        "name": "Why you lying",
+        "originalName": "Why You Always Lying Short Version_vocals_split_by_lalalai.mp3",
+        "path": "/home/sphinxy/chromox/backend/guide_samples/d5ed82b8-98ae-4d8a-ad30-e4fea597d40a/guide_1764533234690.mp3",
+        "uploaded_at": "2025-11-30T20:07:14.697Z"
+      },
+      {
+        "id": "e31b5791-cf5e-4c22-8e98-a004eb50c679",
+        "name": "You're Not That Guy Pal",
+        "originalName": "ytmp3free.cc_original-video-your-not-that-guy-pal-trust-me-your-not-that-guy-youtubemp3free.org.mp3",
+        "path": "/home/sphinxy/chromox/backend/guide_samples/d5ed82b8-98ae-4d8a-ad30-e4fea597d40a/guide_1764534527443.mp3",
+        "uploaded_at": "2025-11-30T20:28:47.456Z"
+      },
+      {
+        "id": "44f1d987-d25e-4e2a-99f8-769d45a57c13",
+        "name": "Damn Boy He Thicc",
+        "originalName": "ytmp3free.cc_that-boy-thick-youtubemp3free.org.mp3",
+        "path": "/home/sphinxy/chromox/backend/guide_samples/d5ed82b8-98ae-4d8a-ad30-e4fea597d40a/guide_1764538170731.mp3",
+        "uploaded_at": "2025-11-30T21:29:30.740Z"
+      }
+    ],
+    "image_focus_x": 79.02778625488281,
+    "image_focus_y": 83.02085876464844,
+    "image_url": "/media/personas/persona_1764537744014.png"
   }
 ]

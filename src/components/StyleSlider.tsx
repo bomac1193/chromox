@@ -11,10 +11,10 @@ type StyleSliderProps = {
 
 export function StyleSlider({ label, min = 0, max = 1, step = 0.01, value, onChange }: StyleSliderProps) {
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-white/5 bg-white/5 p-3">
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.6em] text-white/50">
-        <span>{label}</span>
-        <span className="font-mono text-neon">{value.toFixed(2)}</span>
+    <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.4em] text-white/60">
+        <span className="truncate">{label}</span>
+        <span className="font-mono text-xs text-neon">{value.toFixed(2)}</span>
       </div>
       <Slider.Root
         className="relative flex h-6 w-full touch-none select-none items-center"
