@@ -57,64 +57,85 @@ export function StudioPanel({ personas, activePersonaId, onPersonaChange, onRewr
   }
 
   return (
-    <section className="rounded-2xl border border-white/5 bg-black/70 p-5 shadow-panel">
-      <header className="mb-6 flex flex-wrap items-center gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.4em] text-white/40">Persona Synth Core</p>
-          <h2 className="text-2xl font-semibold text-white">Chromox Studio</h2>
-        </div>
-        <select
-          className="ml-auto rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-neon focus:outline-none"
-          value={activePersonaId}
-          onChange={(e) => onPersonaChange(e.target.value)}
-        >
-          <option value="">Select Persona</option>
-          {personas.map((persona) => (
-            <option key={persona.id} value={persona.id}>
-              {persona.name}
-            </option>
-          ))}
-        </select>
-      </header>
-      <div className="grid gap-5 lg:grid-cols-2">
+    <div className="space-y-6">
+      {/* Lyrics & Style Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left: Lyrics & Prompt */}
         <div className="space-y-4">
           <div>
-            <label className="text-xs uppercase tracking-[0.4em] text-white/50">Lyrics</label>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/70">
+              Lyrics
+            </label>
             <textarea
-              className="mt-2 h-40 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white focus:border-neon focus:outline-none"
+              className="glass-input h-48 w-full resize-none rounded-xl px-4 py-3 text-sm leading-relaxed text-white placeholder-white/30"
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
+              placeholder="Enter your lyrics..."
             />
             <button
               onClick={handleRewrite}
-              className="mt-2 rounded-md border border-white/10 px-3 py-2 text-xs uppercase tracking-[0.4em] text-white transition hover:border-magma/60 hover:text-magma"
+              className="glass-card-hover mt-3 rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider"
             >
-              Rewrite w/ AI
+              ✨ Rewrite with AI
             </button>
           </div>
+
           <div>
-            <label className="text-xs uppercase tracking-[0.4em] text-white/50">Style Prompt</label>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/70">
+              Style Prompt
+            </label>
             <input
-              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-neon focus:outline-none"
+              className="glass-input w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/30"
               value={stylePrompt}
               onChange={(e) => setStylePrompt(e.target.value)}
+              placeholder="e.g., ethereal, dreamy, powerful..."
             />
           </div>
-          <GuideDropzone onFile={setGuide} />
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/70">
+              Guide Vocal (Optional)
+            </label>
+            <GuideDropzone onFile={setGuide} />
+          </div>
         </div>
+
+        {/* Right: Style Controls */}
         <div className="space-y-4">
-          <StyleGrid controls={controls} onChange={setControls} />
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/70">
+              Voice Controls
+            </label>
+            <div className="glass-card rounded-xl p-4">
+              <StyleGrid controls={controls} onChange={setControls} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Render Section */}
+      <div className="glass-card rounded-xl p-6">
+        <div className="flex flex-col gap-4">
           <button
             onClick={handleRender}
             disabled={!activePersonaId || busy}
-            className="w-full rounded-xl border border-neon/40 bg-gradient-to-r from-neon/20 to-magma/20 py-3 text-sm font-semibold uppercase tracking-[0.6em] text-neon transition hover:from-neon/30 hover:to-magma/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/30"
+            className="glass-button w-full rounded-xl py-4 text-sm font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {busy ? 'Rendering...' : 'Render Persona' }
+            {busy ? '⏳ Rendering Voice...' : '🎵 Render Vocal'}
           </button>
+
           <Meter active={busy} />
-          <AudioPlayer src={outputUrl} />
+
+          {outputUrl && (
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/70">
+                Output
+              </label>
+              <AudioPlayer src={outputUrl} />
+            </div>
+          )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
