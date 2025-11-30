@@ -72,13 +72,16 @@ router.post('/create-persona', upload.single('vocal'), async (req, res) => {
     const persona = createPersona({
       name,
       description: description || `Cloned voice from ${req.file.originalname}`,
-      voice_model_key: `cloned_${Date.now()}`, // Unique key for this cloned voice
+      voice_model_key: '', // Will be set below
       provider: 'chromox-clone', // Use our custom cloning provider
       default_style_controls: defaultControls,
       is_cloned: true,
       voice_profile: voiceProfile,
       clone_source: 'upload'
     });
+
+    // Update voice_model_key to match persona ID for consistency
+    persona.voice_model_key = `cloned_${persona.id}`;
 
     // Save voice profile to disk for persistence
     saveVoiceProfile(persona.id, voiceProfile);
