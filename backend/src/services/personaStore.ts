@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuid } from 'uuid';
-import { Persona } from '../types';
+import { Persona, Relic } from '../types';
+import { buildHeuristicGuideMetadata, generateGuideMetadata } from './guideMetadata';
 
 const dataDir = path.join(process.cwd(), 'storage');
 const personaFile = path.join(dataDir, 'personas.json');
@@ -10,17 +11,43 @@ fs.mkdirSync(dataDir, { recursive: true });
 
 let personas: Persona[] = [];
 try {
-if (fs.existsSync(personaFile)) {
+  if (fs.existsSync(personaFile)) {
     const raw = fs.readFileSync(personaFile, 'utf-8');
     personas = (JSON.parse(raw) as Persona[]).map((persona) => ({
       ...persona,
       image_focus_x: persona.image_focus_x ?? 50,
-      image_focus_y: persona.image_focus_y ?? 50
+      image_focus_y: persona.image_focus_y ?? 50,
+      guide_samples: (persona.guide_samples ?? []).map((sample) => {
+        const fallback = buildHeuristicGuideMetadata({
+          name: sample.name,
+          path: sample.path,
+          tags: sample.tags,
+          source: sample.source
+        });
+        return {
+          ...sample,
+          url: sample.url ?? deriveGuideUrl(sample.path),
+          source: sample.source ?? 'user',
+          tags: sample.tags ?? fallback.tags,
+          transcript: sample.transcript ?? fallback.transcript,
+          embedding: sample.embedding ?? fallback.embedding,
+          mood: sample.mood ?? fallback.mood,
+          aiModel: sample.aiModel ?? fallback.aiModel,
+          recommendedUse: sample.recommendedUse ?? fallback.recommendedUse,
+          tempo: sample.tempo ?? fallback.tempo
+        };
+      })
     }));
   }
 } catch (error) {
   console.error('[PersonaStore] Failed to load personas from disk:', error);
   personas = [];
+}
+
+function deriveGuideUrl(filePath: string) {
+  const guideRoot = path.join(process.cwd(), 'guide_samples');
+  const relative = path.relative(guideRoot, filePath);
+  return `/media/guides/${relative.replace(/\\/g, '/')}`;
 }
 
 function persist() {
@@ -69,20 +96,79 @@ export function updatePersona(
   return personas[index];
 }
 
-export function addGuideSample(
-  personaId: string,
-  sample: { name: string; originalName: string; path: string }
-) {
+type GuideSampleInput = {
+  name: string;
+  originalName: string;
+  path: string;
+  source?: 'user' | 'ai-lab';
+  tags?: string[];
+  mode?: 'glitch' | 'dream' | 'anthem';
+  mintedFromRenderId?: string;
+};
+
+export async function addGuideSample(personaId: string, sample: GuideSampleInput) {
   const persona = findPersona(personaId);
   if (!persona) return null;
+  const metadata = await generateGuideMetadata({
+    name: sample.name,
+    path: sample.path,
+    tags: sample.tags,
+    source: sample.source,
+    mode: sample.mode
+  });
   const entry = {
     id: uuid(),
     name: sample.name,
     originalName: sample.originalName,
     path: sample.path,
-    uploaded_at: new Date().toISOString()
+    url: deriveGuideUrl(sample.path),
+    uploaded_at: new Date().toISOString(),
+    source: sample.source ?? 'user',
+    tags: metadata.tags,
+    transcript: metadata.transcript,
+    embedding: metadata.embedding,
+    tempo: metadata.tempo,
+    mood: metadata.mood,
+    aiModel: metadata.aiModel,
+    recommendedUse: metadata.recommendedUse,
+    mintedFromRenderId: sample.mintedFromRenderId,
+    // Accent detection metadata from AssemblyAI/Rev.ai
+    accentMetadata: metadata.accentMetadata,
+    transcriptionConfidence: metadata.transcriptionConfidence,
+    transcriptionProvider: metadata.transcriptionProvider,
+    // Phonetic pronunciation (fixes Chinese/Russian artifacts)
+    phoneticTranscript: metadata.phoneticTranscript,
+    pronunciationHints: metadata.pronunciationHints,
+    prosodyHints: metadata.prosodyHints,
+    ensembleDetails: metadata.ensembleDetails
   };
   persona.guide_samples = [...(persona.guide_samples ?? []), entry];
   persist();
   return entry;
+}
+
+// ── Relic CRUD ─────────────────────────────────────────────────────
+
+export function addRelicToPersona(
+  personaId: string,
+  relic: Omit<Relic, 'id' | 'created_at' | 'sourcePersonaId'>
+): Relic | null {
+  const persona = findPersona(personaId);
+  if (!persona) return null;
+
+  const entry: Relic = {
+    ...relic,
+    id: uuid(),
+    sourcePersonaId: personaId,
+    created_at: new Date().toISOString()
+  };
+
+  persona.relics = [...(persona.relics ?? []), entry];
+  persist();
+  return entry;
+}
+
+export function listPersonaRelics(personaId: string): Relic[] {
+  const persona = findPersona(personaId);
+  return persona?.relics ?? [];
 }

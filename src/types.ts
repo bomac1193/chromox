@@ -19,7 +19,7 @@ export type EffectSettings = {
     | 'rave-ddsp'
     | 'rave-ddsp-8d'
     | 'resonance-8d';
-  preset?: 'clean' | 'vintage' | 'club' | 'raw' | 'shimmer-stack' | 'harmonic-orbit' | 'pitch-warp' | 'choir-cloud' | '8d-swarm';
+  preset?: 'clean' | 'lush' | 'vintage' | 'club' | 'raw' | 'shimmer-stack' | 'harmonic-orbit' | 'pitch-warp' | 'choir-cloud' | '8d-swarm';
   clarity: number;
   air: number;
   drive: number;
@@ -38,7 +38,17 @@ export type GuideSample = {
   name: string;
   originalName: string;
   path: string;
+  url?: string;
   uploaded_at: string;
+  source?: 'user' | 'ai-lab';
+  tags?: string[];
+  transcript?: string;
+  embedding?: number[];
+  tempo?: number;
+  mood?: 'hype' | 'dream' | 'anthem' | 'ambient';
+  aiModel?: string;
+  recommendedUse?: string;
+  mintedFromRenderId?: string;
 };
 
 export type VoiceProfile = {
@@ -79,6 +89,22 @@ export type Persona = {
   voice_profile?: VoiceProfile;
   clone_source?: 'upload' | 'recording' | 'external';
   guide_samples?: GuideSample[];
+  relics?: Relic[];
+};
+
+export type GuideSuggestion = {
+  id: string;
+  title: string;
+  description: string;
+  reason: string;
+  vibe: 'hype' | 'chill' | 'nostalgic' | 'glitch';
+  energyScore: number;
+  matchConfidence: number;
+  sampleId?: string;
+  previewUrl?: string;
+  action: 'use' | 'mint';
+  mintMode?: 'glitch' | 'dream' | 'anthem';
+  transcriptSnippet?: string;
 };
 
 export type RenderJob = {
@@ -95,6 +121,9 @@ export type RenderJob = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  guideStartTime?: number;
+  guideEndTime?: number;
+  guideAccentBlend?: number;
 };
 
 export type RenderHistoryItem = {
@@ -117,4 +146,113 @@ export type RenderHistoryItem = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  rating?: 'like' | 'dislike' | 'neutral';
+};
+
+export type FolioClip = {
+  id: string;
+  name: string;
+  audioPath: string;
+  audioUrl: string;
+  source: 'render' | 'upload';
+  sourceRenderId?: string;
+  sourcePersonaName?: string;
+  tags?: string[];
+  duration?: number;
+  added_at: string;
+};
+
+// ── Sonic Genome ───────────────────────────────────────────────────
+
+export type SonicArchetypeDesignation =
+  | 'S-0' | 'T-1' | 'V-2' | 'L-3' | 'C-4' | 'N-5'
+  | 'H-6' | 'P-7' | 'D-8' | 'F-9' | 'R-10' | 'NULL';
+
+export type SonicArchetype = {
+  designation: SonicArchetypeDesignation;
+  glyph: string;
+  title: string;
+  essence: string;
+  creativeMode: string;
+  shadow: string;
+  color: string;
+};
+
+export type SonicGenomeSummary = {
+  archetype: {
+    primary: SonicArchetype;
+    secondary: SonicArchetype | null;
+    distribution: Record<string, number>;
+    confidence: number;
+  };
+  gamification: {
+    xp: number;
+    tier: number;
+    tierName: string;
+    nextTierName: string | null;
+    nextTierXP: number | null;
+    achievements: string[];
+    streak: number;
+    longestStreak: number;
+    lastActiveDate: string | null;
+    totalRenders: number;
+    totalLikes: number;
+    totalMints: number;
+    uniqueEffects: string[];
+    uniqueGuides: string[];
+  };
+  sonicPatterns: {
+    dominantTextures: string[];
+    avoidTextures: string[];
+    preferredMoods: string[];
+    productionStyle: string[];
+    vocalPreference: string[];
+    spatialPreference: string[];
+  };
+  topKeywords: Array<{ keyword: string; score: number; count: number }>;
+  signalCount: number;
+  confidence: number;
+  itemCount: number;
+  lastUpdated: string | null;
+  createdAt: string;
+};
+
+// ── Boveda ─────────────────────────────────────────────────────────
+
+export type Relic = {
+  id: string;
+  name: string;
+  description: string;
+  lore: string;
+  tier: number;
+  icon: string;
+  audioUrl?: string;
+  effectChain?: string;
+  sourceRenderId?: string;
+  sourcePersonaId: string;
+  created_at: string;
+};
+
+export type RelicPackSummary = {
+  id: string;
+  name: string;
+  description: string;
+  relicCount: number;
+  unlocked: boolean;
+};
+
+export type TasteProfile = {
+  personaId: string;
+  totalRenders: number;
+  likes: number;
+  dislikes: number;
+  favoriteGuide?: {
+    id: string;
+    name: string;
+    mood?: string;
+  };
+  recentLabels: string[];
+  energeticPreference: number;
+  glitchAffinity: number;
+  recommendedMintMode: 'glitch' | 'dream' | 'anthem';
 };

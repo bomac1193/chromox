@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuid } from 'uuid';
-import { EffectSettings, RenderJobRecord, StyleControls } from '../types';
+import { EffectSettings, RenderJobRecord, StyleControls, RenderRating } from '../types';
 
 const dataDir = path.join(process.cwd(), 'storage');
 const rendersFile = path.join(dataDir, 'renders.json');
@@ -12,7 +12,10 @@ let renders: RenderJobRecord[] = [];
 try {
   if (fs.existsSync(rendersFile)) {
     const raw = fs.readFileSync(rendersFile, 'utf-8');
-    renders = JSON.parse(raw) as RenderJobRecord[];
+    renders = (JSON.parse(raw) as RenderJobRecord[]).map((job) => ({
+      ...job,
+      rating: job.rating ?? 'neutral'
+    }));
   }
 } catch (error) {
   console.error('[RenderStore] Failed to load render history:', error);
@@ -77,9 +80,18 @@ export function createRenderJob(input: CreateRenderJobInput) {
     guideSampleId: input.guideSampleId,
     guideMatchIntensity: input.guideMatchIntensity,
     guideUseLyrics: input.guideUseLyrics,
-    guideTempo: input.guideTempo
+    guideTempo: input.guideTempo,
+    rating: 'neutral'
   };
   renders.push(record);
   persist();
   return record;
+}
+
+export function setRenderRating(id: string, rating: RenderRating) {
+  const job = findRenderJob(id);
+  if (!job) return null;
+  job.rating = rating;
+  persist();
+  return job;
 }

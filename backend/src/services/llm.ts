@@ -1,5 +1,60 @@
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
 export async function rewriteLyricsWithLLM(lyrics: string, stylePrompt: string) {
-  return `${lyrics}\n// Reimagined via Nebula Tone: ${stylePrompt}`;
+  // Fallback if no API key
+  if (!OPENAI_API_KEY) {
+    return `${lyrics}\n// Reimagined via Nebula Tone: ${stylePrompt}`;
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a creative lyricist that rewrites song lyrics in different styles. When given lyrics and a style direction, you rewrite them to match that vibe while keeping the SAME LENGTH and structure. Be creative, evocative, and stylistically bold. Keep the rewrite CONCISE - do not make it longer than the original. Output ONLY the rewritten lyrics, no explanations or commentary.`
+          },
+          {
+            role: 'user',
+            content: `Rewrite these lyrics in the style of: ${stylePrompt}\n\nOriginal lyrics:\n${lyrics}\n\nRewritten lyrics (keep it the same length):`
+          }
+        ],
+        temperature: 0.9,
+        max_tokens: 300
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      return `${lyrics}\n// Reimagined via Nebula Tone: ${stylePrompt}`;
+    }
+
+    const data = await response.json() as any;
+    let rewrittenLyrics = data?.choices?.[0]?.message?.content?.trim();
+
+    if (!rewrittenLyrics) {
+      return `${lyrics}\n// Reimagined via Nebula Tone: ${stylePrompt}`;
+    }
+
+    // Safety: Ensure lyrics don't exceed ElevenLabs 10k character limit (with buffer)
+    const MAX_CHARS = 8000;
+    if (rewrittenLyrics.length > MAX_CHARS) {
+      console.warn(`[LLM] Rewritten lyrics too long (${rewrittenLyrics.length} chars), truncating to ${MAX_CHARS}`);
+      rewrittenLyrics = rewrittenLyrics.substring(0, MAX_CHARS) + '\n...';
+    }
+
+    return rewrittenLyrics;
+  } catch (error) {
+    console.error('Failed to rewrite lyrics with LLM:', error);
+    return `${lyrics}\n// Reimagined via Nebula Tone: ${stylePrompt}`;
+  }
 }
 
 export async function promptToControls(stylePrompt: string) {

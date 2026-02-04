@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { z } from 'zod';
-import { createPersona, findPersona, listPersonas, updatePersona } from '../services/personaStore';
+import { createPersona, findPersona, listPersonas, updatePersona, listPersonaRelics, addRelicToPersona } from '../services/personaStore';
 
 const router = Router();
 const mediaDir = path.join(process.cwd(), 'persona_media');
@@ -120,6 +120,36 @@ router.put('/personas/:id', upload.single('image'), (req, res) => {
   });
 
   res.json(updated);
+});
+
+// ── Relic endpoints ────────────────────────────────────────────────
+
+router.get('/personas/:id/relics', (req, res) => {
+  const persona = findPersona(req.params.id);
+  if (!persona) return res.status(404).json({ error: 'Persona not found' });
+  res.json(listPersonaRelics(req.params.id));
+});
+
+router.post('/personas/:id/relics', (req, res) => {
+  const persona = findPersona(req.params.id);
+  if (!persona) return res.status(404).json({ error: 'Persona not found' });
+
+  const { name, description, lore, tier, icon, audioUrl, effectChain, sourceRenderId } = req.body ?? {};
+  if (!name) return res.status(400).json({ error: 'name is required' });
+
+  const relic = addRelicToPersona(req.params.id, {
+    name,
+    description: description ?? '',
+    lore: lore ?? '',
+    tier: tier ?? 1,
+    icon: icon ?? '*',
+    audioUrl,
+    effectChain,
+    sourceRenderId
+  });
+
+  if (!relic) return res.status(404).json({ error: 'Persona not found' });
+  res.status(201).json(relic);
 });
 
 export default router;

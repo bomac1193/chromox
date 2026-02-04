@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react';
-import { Persona, RenderHistoryItem, StyleControls } from './types';
+import { Persona, RenderHistoryItem, StyleControls, FolioClip } from './types';
 import { StudioPanel } from './components/StudioPanel';
 import { CreatePersonaModal } from './components/CreatePersonaModal';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import {
   API_HOST,
   createPersona,
+  createRelic,
   updatePersona,
   fetchPersonas,
   fetchRenderHistory,
   renderPerformance,
   replayRender,
   rewriteLyrics,
-  previewPerformance
+  previewPerformance,
+  rateRenderJob,
+  fetchFolioClips,
+  addToFolio,
+  removeFromFolio,
+  sendSonicSignal
 } from './lib/api';
 import { DownloadLibraryDrawer } from './components/DownloadLibraryDrawer';
+import { FolioDrawer } from './components/FolioDrawer';
 import { EditPersonaModal } from './components/EditPersonaModal';
+import { AudioProvider } from './contexts/AudioContext';
+import { LogoIcon, MicIcon, FolderIcon, BookmarkIcon, ShieldIcon } from './components/Icons';
+import { BovedaDrawer } from './components/boveda/BovedaDrawer';
 
 export default function App() {
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -26,6 +36,11 @@ export default function App() {
   const [renderHistory, setRenderHistory] = useState<RenderHistoryItem[]>([]);
   const [prefillJob, setPrefillJob] = useState<RenderHistoryItem | null>(null);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
+  const [tasteProfileVersion, setTasteProfileVersion] = useState(0);
+  const [folioClips, setFolioClips] = useState<FolioClip[]>([]);
+  const [folioOpen, setFolioOpen] = useState(false);
+  const [selectedFolioClipId, setSelectedFolioClipId] = useState<string | undefined>(undefined);
+  const [bovedaOpen, setBovedaOpen] = useState(false);
   function handlePrefillConsumed() {
     setPrefillJob(null);
   }
@@ -33,6 +48,7 @@ export default function App() {
   useEffect(() => {
     refresh();
     refreshDownloads();
+    refreshFolio();
   }, []);
 
   async function refresh() {
@@ -78,6 +94,27 @@ export default function App() {
     setRenderHistory(history);
   }
 
+  async function refreshFolio() {
+    const clips = await fetchFolioClips();
+    setFolioClips(clips);
+  }
+
+  async function handleAddToFolio(renderId: string, name?: string) {
+    const clip = await addToFolio({ renderId, name });
+    setFolioClips((prev) => [clip, ...prev]);
+    sendSonicSignal('save_to_folio', renderId);
+  }
+
+  async function handleRemoveFromFolio(id: string) {
+    await removeFromFolio(id);
+    setFolioClips((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  async function handleUploadToFolio(file: File, name: string) {
+    const clip = await addToFolio({ audio: file, name });
+    setFolioClips((prev) => [clip, ...prev]);
+  }
+
   function handleRenderComplete(job: RenderHistoryItem) {
     setRenderHistory((prev) => [job, ...prev]);
   }
@@ -88,6 +125,17 @@ export default function App() {
     setDownloadsOpen(false);
   }
 
+  async function handleRateRender(jobId: string, rating: 'like' | 'dislike' | 'neutral') {
+    await rateRenderJob(jobId, rating);
+    setRenderHistory((prev) =>
+      prev.map((job) => (job.id === jobId ? { ...job, rating } : job))
+    );
+    setTasteProfileVersion((prev) => prev + 1);
+    if (rating === 'like' || rating === 'dislike') {
+      sendSonicSignal(rating, jobId);
+    }
+  }
+
   const activePersona = personas.find((p) => p.id === activePersonaId);
   const activePersonaImage = activePersona?.image_url ? `${API_HOST}${activePersona.image_url}` : undefined;
   const objectPositionStyle = (persona?: Persona) => ({
@@ -95,38 +143,56 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen text-white">
+    <AudioProvider>
+      <div className="min-h-screen text-primary">
       {/* Header */}
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+      <header className="border-b border-border-default bg-surface">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-6 py-4">
           {/* Left: Logo & Title */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20">
-              <span className="neon-text text-xl font-bold">⬢</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
+              <LogoIcon className="text-accent" size={20} />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight">Chromox</h1>
-              <p className="text-xs text-white/50">Voice Cloning Studio</p>
+              <h1 className="font-display text-lg font-semibold tracking-tight">Chromox</h1>
+              <p className="text-xs text-muted">Voice Cloning Studio</p>
             </div>
           </div>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setDownloadsOpen(true)}
-              className="glass-card-hover rounded-lg px-4 py-2 text-sm font-semibold"
+              onClick={() => setBovedaOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition hover:bg-overlay hover:border-border-emphasis"
             >
-              📁 Downloads
+              <ShieldIcon size={14} /> Boveda
+            </button>
+            <button
+              onClick={() => setFolioOpen(true)}
+              className="relative flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10 hover:border-accent/50"
+            >
+              <BookmarkIcon size={14} /> Folio
+              {folioClips.length > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-semibold text-canvas">
+                  {folioClips.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setDownloadsOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition hover:bg-overlay hover:border-border-emphasis"
+            >
+              <FolderIcon size={14} /> Downloads
             </button>
             <button
               onClick={() => setCloneOpen(true)}
-              className="glass-button rounded-lg px-4 py-2 text-sm font-semibold"
+              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-canvas transition hover:bg-accent-hover"
             >
-              <span className="neon-text">⬢</span> Clone Voice
+              <LogoIcon size={14} /> Clone Voice
             </button>
             <button
               onClick={() => setForgeOpen(true)}
-              className="glass-card-hover rounded-lg px-4 py-2 text-sm font-semibold"
+              className="rounded-lg border border-border-default bg-surface px-4 py-2 text-sm font-medium text-secondary transition hover:bg-overlay hover:border-border-emphasis"
             >
               + New Persona
             </button>
@@ -138,10 +204,10 @@ export default function App() {
       <div className="mx-auto flex max-w-[1800px] gap-6 p-6">
         {/* Left Column: Persona Selector */}
         <aside className="w-80 shrink-0">
-          <div className="frosted-panel sticky top-6 rounded-2xl p-4">
+          <div className="sticky top-6 rounded-2xl border border-border-default bg-surface p-4">
             <div className="mb-4">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">Personas</h2>
-              <p className="text-xs text-white/50">{personas.length} voice{personas.length !== 1 ? 's' : ''}</p>
+              <h2 className="text-xs font-medium uppercase tracking-wide text-muted">Personas</h2>
+              <p className="text-xs text-muted">{personas.length} voice{personas.length !== 1 ? 's' : ''}</p>
             </div>
 
             {/* Persona Tiles */}
@@ -154,18 +220,18 @@ export default function App() {
                     onClick={() => setActivePersonaId(persona.id)}
                     className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
                       activePersonaId === persona.id
-                        ? 'border-cyan-400/50 bg-white/20 shadow-lg ring-1 ring-cyan-400/40'
-                        : 'border-white/10 bg-white/5 hover:-translate-y-px hover:border-white/30 hover:bg-white/15 hover:shadow-lg'
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border-default bg-surface hover:bg-overlay hover:border-border-emphasis'
                     }`}
                   >
                     {/* Avatar/Icon */}
                     <div
                       className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg ${
                         imageSrc
-                          ? 'border border-white/10 bg-black/40'
+                          ? 'border border-border-default bg-canvas'
                           : persona.is_cloned
-                            ? 'bg-gradient-to-br from-cyan-400/20 to-blue-500/20'
-                            : 'bg-white/10'
+                            ? 'bg-accent/15'
+                            : 'bg-elevated'
                       }`}
                     >
                       {imageSrc ? (
@@ -177,30 +243,32 @@ export default function App() {
                           loading="lazy"
                         />
                       ) : persona.is_cloned ? (
-                        <span className="neon-text text-sm">⬢</span>
+                        <LogoIcon className="text-accent" size={14} />
                       ) : (
-                        <span className="text-sm">🎤</span>
+                        <MicIcon className="text-secondary" size={14} />
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate text-sm font-semibold text-white">{persona.name}</h3>
+                        <h3 className="truncate text-sm font-medium text-primary">{persona.name}</h3>
                         {activePersonaId === persona.id && (
-                          <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                          <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                         )}
                       </div>
-                      <p className="truncate text-xs text-white/60">{persona.description}</p>
+                      <p className="truncate text-xs text-muted">{persona.description}</p>
 
                       {/* Tags */}
                       <div className="mt-1.5 flex gap-1">
-                        <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-white/70">
-                          {persona.provider}
-                        </span>
                         {persona.is_cloned && (
-                          <span className="neon-text rounded-md bg-cyan-400/10 px-1.5 py-0.5 text-[10px] font-medium">
+                          <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
                             Cloned
+                          </span>
+                        )}
+                        {(persona.relics?.length ?? 0) > 0 && (
+                          <span className="rounded-md bg-yellow-500/15 px-1.5 py-0.5 text-[10px] font-medium text-yellow-600">
+                            {persona.relics!.length} relic{persona.relics!.length !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
@@ -211,10 +279,10 @@ export default function App() {
 
               {/* Empty State */}
               {personas.length === 0 && (
-                <div className="glass-dropzone flex flex-col items-center justify-center rounded-xl p-8 text-center">
-                  <div className="mb-2 text-3xl opacity-40">⬢</div>
-                  <p className="text-sm font-medium text-white/60">No personas yet</p>
-                  <p className="mt-1 text-xs text-white/40">Clone a voice to begin</p>
+                <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border-default bg-surface p-8 text-center">
+                  <LogoIcon className="mb-2 text-muted" size={32} />
+                  <p className="text-sm font-medium text-secondary">No personas yet</p>
+                  <p className="mt-1 text-xs text-muted">Clone a voice to begin</p>
                 </div>
               )}
             </div>
@@ -224,11 +292,11 @@ export default function App() {
         {/* Right Column: Detail Panel (Studio) */}
         <main className="min-w-0 flex-1">
           {activePersona ? (
-            <div className="frosted-panel rounded-2xl p-6">
+            <div className="rounded-2xl border border-border-default bg-surface p-6">
               {/* Persona Header */}
-              <div className="mb-6 flex items-start justify-between border-b border-white/10 pb-6">
+              <div className="mb-6 flex items-start justify-between border-b border-border-default pb-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20">
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-accent/15">
                     {activePersonaImage ? (
                       <img
                         src={activePersonaImage}
@@ -237,29 +305,26 @@ export default function App() {
                         style={objectPositionStyle(activePersona)}
                       />
                     ) : activePersona.is_cloned ? (
-                      <span className="neon-text text-3xl">⬢</span>
+                      <LogoIcon className="text-accent" size={28} />
                     ) : (
-                      <span className="text-3xl">🎤</span>
+                      <MicIcon className="text-secondary" size={28} />
                     )}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-white">{activePersona.name}</h2>
-                    <p className="mt-1 text-sm text-white/60">{activePersona.description}</p>
-                    <div className="mt-2 flex gap-2">
-                      <span className="rounded-lg bg-white/10 px-2 py-1 text-xs font-medium text-white/70">
-                        {activePersona.provider}
-                      </span>
-                      {activePersona.is_cloned && (
-                        <span className="neon-text rounded-lg bg-cyan-400/10 px-2 py-1 text-xs font-medium">
+                    <h2 className="font-display text-2xl font-semibold tracking-tight">{activePersona.name}</h2>
+                    <p className="mt-1 text-sm text-secondary">{activePersona.description}</p>
+                    {activePersona.is_cloned && (
+                      <div className="mt-2 flex gap-2">
+                        <span className="rounded-lg bg-accent/15 px-2 py-1 text-xs font-medium text-accent">
                           Voice Clone
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={() => setEditingPersona(activePersona)}
-                  className="rounded-xl border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-white/70 transition hover:border-white/50 hover:text-white"
+                  className="rounded-xl border border-border-default px-4 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis hover:text-primary"
                 >
                   Edit Persona
                 </button>
@@ -277,25 +342,34 @@ export default function App() {
                 onPrefillConsumed={handlePrefillConsumed}
                 onPreview={previewPerformance}
                 onGuideLibraryUpdated={refresh}
+                onRateRender={handleRateRender}
+                tasteProfileVersion={tasteProfileVersion}
+                folioClips={folioClips}
+                onRemoveFolioClip={handleRemoveFromFolio}
+                onAddToFolio={handleAddToFolio}
+                onUploadToFolio={handleUploadToFolio}
+                selectedFolioClipId={selectedFolioClipId}
+                onSelectFolioClip={setSelectedFolioClipId}
+                onOpenFolio={() => setFolioOpen(true)}
               />
             </div>
           ) : (
-            <div className="frosted-panel flex h-[600px] flex-col items-center justify-center rounded-2xl p-12 text-center">
-              <div className="mb-4 text-6xl opacity-30">⬢</div>
-              <h3 className="text-xl font-bold text-white">No Persona Selected</h3>
-              <p className="mt-2 text-sm text-white/60">
+            <div className="flex h-[600px] flex-col items-center justify-center rounded-2xl border border-border-default bg-surface p-12 text-center">
+              <LogoIcon className="mb-4 text-muted" size={48} />
+              <h3 className="font-display text-xl font-semibold">No Persona Selected</h3>
+              <p className="mt-2 text-sm text-secondary">
                 Select a persona from the left or create a new one
               </p>
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => setCloneOpen(true)}
-                  className="glass-button rounded-lg px-5 py-2.5 text-sm font-semibold"
+                  className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition hover:bg-accent-hover"
                 >
-                  <span className="neon-text">⬢</span> Clone Voice
+                  <LogoIcon size={14} /> Clone Voice
                 </button>
                 <button
                   onClick={() => setForgeOpen(true)}
-                  className="glass-card-hover rounded-lg px-5 py-2.5 text-sm font-semibold"
+                  className="rounded-lg border border-border-default bg-surface px-5 py-2.5 text-sm font-medium text-secondary transition hover:bg-overlay hover:border-border-emphasis"
                 >
                   + New Persona
                 </button>
@@ -326,7 +400,41 @@ export default function App() {
           return result;
         }}
         refreshJobs={refreshDownloads}
+        onRateJob={handleRateRender}
+        onAddToFolio={handleAddToFolio}
+      />
+      <FolioDrawer
+        open={folioOpen}
+        onClose={() => setFolioOpen(false)}
+        clips={folioClips}
+        selectedClipId={selectedFolioClipId}
+        onSelectClip={(id) => setSelectedFolioClipId(id)}
+        onRemoveClip={handleRemoveFromFolio}
+        onUploadClip={handleUploadToFolio}
+      />
+      <BovedaDrawer
+        open={bovedaOpen}
+        onClose={() => setBovedaOpen(false)}
+        personas={personas}
+        onCreatePersona={async (data) => {
+          const persona = await createPersona({
+            name: data.name,
+            description: data.bio,
+            voice_model_key: 'default',
+            provider: 'chromox-labs',
+            default_style_controls: {
+              brightness: 0.5, breathiness: 0.5, energy: 0.5, formant: 0,
+              vibratoDepth: 0.4, vibratoRate: 0.5, roboticism: 0, glitch: 0,
+              stereoWidth: 0.5,
+            },
+          });
+          setPersonas((prev) => [...prev, persona]);
+        }}
+        onCreateRelic={async (personaId, relic) => {
+          await createRelic(personaId, relic);
+        }}
       />
     </div>
+    </AudioProvider>
   );
 }

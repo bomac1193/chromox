@@ -14,7 +14,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.18",
     "@radix-ui/react-slider": "^1.1.1",
-    "@tauri-apps/api": "^2.0.1",
+    "@tauri-apps/api": "2.5.0",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "react": "^18.2.0",
@@ -22,7 +22,7 @@
     "tailwind-merge": "^2.2.1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "2.5.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.2.1",

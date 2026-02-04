@@ -2,6 +2,7 @@ import { Dialog } from '@headlessui/react';
 import { useEffect, useRef, useState, DragEvent } from 'react';
 import { StyleControls } from '../types';
 import { API_HOST } from '../lib/api';
+import { LogoIcon, MicIcon, UploadIcon } from './Icons';
 
 type AnalysisResult = {
   success: boolean;
@@ -126,22 +127,22 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+      <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
 
       {/* Modal Container */}
       <div className="fixed inset-0 flex items-center justify-center p-6">
-        <Dialog.Panel className="frosted-panel w-full max-w-2xl rounded-3xl p-8 shadow-2xl">
+        <Dialog.Panel className="w-full max-w-2xl rounded-3xl border border-border-default bg-surface p-8 shadow-2xl">
           {/* Header */}
           <div className="mb-8">
             <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20">
-                <span className="neon-text text-3xl">⬢</span>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15">
+                <LogoIcon className="text-accent" size={28} />
               </div>
               <div>
-                <Dialog.Title className="text-2xl font-bold tracking-tight text-white">
+                <Dialog.Title className="font-display text-2xl font-semibold tracking-tight">
                   Clone Voice Persona
                 </Dialog.Title>
-                <p className="text-sm text-white/50">Extract and save voice characteristics</p>
+                <p className="text-sm text-muted">Extract and save voice characteristics</p>
               </div>
             </div>
           </div>
@@ -149,11 +150,15 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
           <div className="space-y-6">
             {/* Dropzone */}
             <div>
-              <label className="mb-3 block text-sm font-semibold text-white/80">Upload Vocal Stem</label>
+              <label className="mb-3 block text-sm font-medium text-secondary">Upload Vocal Stem</label>
               <div
-                className={`glass-dropzone ${dragging ? 'glass-dropzone-active' : ''} ${
-                  vocalFile ? '!border-cyan-400/50' : ''
-                } flex h-48 cursor-pointer flex-col items-center justify-center rounded-2xl transition-all`}
+                className={`flex h-48 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all ${
+                  dragging
+                    ? 'border-accent bg-accent/10'
+                    : vocalFile
+                      ? 'border-accent/30 bg-surface'
+                      : 'border-border-default bg-surface'
+                }`}
                 onDragOver={(e) => {
                   e.preventDefault();
                   setDragging(true);
@@ -173,17 +178,17 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
               >
                 {vocalFile ? (
                   <div className="text-center">
-                    <div className="mb-2 text-5xl">🎤</div>
-                    <p className="neon-text text-lg font-bold">{vocalFile.name}</p>
-                    <p className="mt-2 text-sm text-white/50">
+                    <MicIcon className="mx-auto mb-2 text-accent" size={40} />
+                    <p className="text-lg font-medium text-accent">{vocalFile.name}</p>
+                    <p className="mt-2 text-sm text-muted">
                       {(vocalFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <div className="mb-4 text-6xl opacity-40">📁</div>
-                    <p className="text-base font-medium text-white/70">Drop vocal stem or click to browse</p>
-                    <p className="mt-3 text-xs uppercase tracking-[0.4em] text-white/40">
+                    <UploadIcon className="mx-auto mb-4 text-muted" size={48} />
+                    <p className="text-base font-medium text-secondary">Drop vocal stem or click to browse</p>
+                    <p className="mt-3 text-xs uppercase tracking-wide text-muted">
                       WAV · AIFF · MP3 · FLAC
                     </p>
                   </div>
@@ -193,36 +198,36 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
 
             {/* Analysis Results */}
             {analysis && (
-              <div className="glass-card rounded-2xl p-5">
+              <div className="rounded-2xl border border-border-default bg-elevated p-5">
                 <div className="mb-4 flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                  <p className="text-sm font-bold uppercase tracking-wider text-cyan-400">
+                  <div className="h-2 w-2 rounded-full bg-accent" />
+                  <p className="text-sm font-medium uppercase tracking-wider text-accent">
                     Voice Analysis Complete
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl bg-black/30 p-4">
-                    <p className="text-xs uppercase tracking-wider text-white/40">Pitch Range</p>
-                    <p className="mt-1 text-lg font-bold text-white">
+                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
+                    <p className="text-xs uppercase tracking-wider text-muted">Pitch Range</p>
+                    <p className="mt-1 text-lg font-semibold">
                       {analysis.profile.characteristics.pitchRange.min.toFixed(0)} -{' '}
                       {analysis.profile.characteristics.pitchRange.max.toFixed(0)} Hz
                     </p>
                   </div>
-                  <div className="rounded-xl bg-black/30 p-4">
-                    <p className="text-xs uppercase tracking-wider text-white/40">Brightness</p>
-                    <p className="mt-1 text-lg font-bold text-cyan-400">
+                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
+                    <p className="text-xs uppercase tracking-wider text-muted">Brightness</p>
+                    <p className="mt-1 text-lg font-semibold text-accent">
                       {(analysis.profile.characteristics.brightness * 100).toFixed(0)}%
                     </p>
                   </div>
-                  <div className="rounded-xl bg-black/30 p-4">
-                    <p className="text-xs uppercase tracking-wider text-white/40">Breathiness</p>
-                    <p className="mt-1 text-lg font-bold text-cyan-400">
+                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
+                    <p className="text-xs uppercase tracking-wider text-muted">Breathiness</p>
+                    <p className="mt-1 text-lg font-semibold text-accent">
                       {(analysis.profile.characteristics.breathiness * 100).toFixed(0)}%
                     </p>
                   </div>
-                  <div className="rounded-xl bg-black/30 p-4">
-                    <p className="text-xs uppercase tracking-wider text-white/40">Vibrato</p>
-                    <p className="mt-1 text-lg font-bold text-white">
+                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
+                    <p className="text-xs uppercase tracking-wider text-muted">Vibrato</p>
+                    <p className="mt-1 text-lg font-semibold">
                       {analysis.profile.characteristics.vibratoRate.toFixed(1)} Hz
                     </p>
                   </div>
@@ -233,9 +238,9 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
             {/* Name & Description */}
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white/80">Persona Name</label>
+                <label className="mb-2 block text-sm font-medium text-secondary">Persona Name</label>
                 <input
-                  className="glass-input w-full rounded-xl px-4 py-3 text-white placeholder-white/30"
+                  className="w-full rounded-xl border border-border-default bg-surface px-4 py-3 text-primary placeholder-disabled focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Stellar Voice, Dream Singer..."
@@ -243,9 +248,9 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white/80">Description</label>
+                <label className="mb-2 block text-sm font-medium text-secondary">Description</label>
                 <input
-                  className="glass-input w-full rounded-xl px-4 py-3 text-white placeholder-white/30"
+                  className="w-full rounded-xl border border-border-default bg-surface px-4 py-3 text-primary placeholder-disabled focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description..."
@@ -255,20 +260,20 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
 
             {/* Persona Image */}
             <div>
-              <label className="mb-2 block text-sm font-semibold text-white/80">Persona Image</label>
+              <label className="mb-2 block text-sm font-medium text-secondary">Persona Image</label>
               <div className="flex items-center gap-3">
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-border-default bg-elevated">
                   {imagePreview ? (
                     <img src={imagePreview} alt="Persona preview" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-2xl text-white/40">🌀</span>
+                    <LogoIcon className="text-muted" size={20} />
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    className="rounded-lg border border-white/30 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:border-white/50"
+                    className="rounded-lg border border-border-default px-4 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis hover:text-primary"
                   >
                     Upload
                   </button>
@@ -276,7 +281,7 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
                     <button
                       type="button"
                       onClick={() => setPersonaImage(null)}
-                      className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white/60 hover:border-white/30 hover:text-white"
+                      className="rounded-lg border border-border-subtle px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted transition hover:border-border-default hover:text-secondary"
                     >
                       Clear
                     </button>
@@ -297,8 +302,8 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
 
             {/* Error */}
             {error && (
-              <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-4 backdrop-blur-xl">
-                <p className="text-sm font-medium text-red-300">{error}</p>
+              <div className="rounded-xl border border-error/30 bg-error/10 p-4">
+                <p className="text-sm font-medium text-error">{error}</p>
               </div>
             )}
 
@@ -308,17 +313,17 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
                 <button
                   onClick={handleAnalyze}
                   disabled={!vocalFile || analyzing}
-                  className="glass-card-hover flex-1 rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white disabled:opacity-40"
+                  className="flex-1 rounded-xl border border-border-default bg-elevated px-6 py-3.5 text-sm font-medium uppercase tracking-wider transition hover:bg-overlay hover:border-border-emphasis disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {analyzing ? '⏳ Analyzing Voice...' : '🔍 Analyze Voice'}
+                  {analyzing ? 'Analyzing Voice...' : 'Analyze Voice'}
                 </button>
               ) : (
                 <button
                   onClick={handleCreatePersona}
                   disabled={!name || creating}
-                  className="glass-button flex-1 rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white disabled:opacity-40"
+                  className="flex-1 rounded-xl bg-accent px-6 py-3.5 text-sm font-medium uppercase tracking-wider text-canvas transition hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {creating ? '⏳ Cloning Voice...' : '⬢ Clone & Save Persona'}
+                  {creating ? 'Cloning Voice...' : 'Clone & Save Persona'}
                 </button>
               )}
               <button
@@ -326,30 +331,30 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
                   resetForm();
                   onClose();
                 }}
-                className="glass-card-hover rounded-xl px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white/70 hover:text-white"
+                className="rounded-xl border border-border-default px-6 py-3.5 text-sm font-medium uppercase tracking-wider text-secondary transition hover:bg-overlay hover:text-primary"
               >
                 Cancel
               </button>
             </div>
 
             {/* Info */}
-            <div className="glass-card rounded-xl p-5">
-              <p className="mb-3 text-sm font-bold text-white/80">How Voice Cloning Works:</p>
-              <ul className="space-y-2 text-sm text-white/60">
+            <div className="rounded-xl border border-border-default bg-elevated p-5">
+              <p className="mb-3 text-sm font-medium text-secondary">How Voice Cloning Works:</p>
+              <ul className="space-y-2 text-sm text-muted">
                 <li className="flex gap-2">
-                  <span className="neon-text">•</span>
+                  <span className="text-accent">·</span>
                   <span>Upload clean vocal stems (isolated vocals work best)</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="neon-text">•</span>
+                  <span className="text-accent">·</span>
                   <span>AI analyzes pitch, timbre, vibrato, and voice characteristics</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="neon-text">•</span>
+                  <span className="text-accent">·</span>
                   <span>Voice profile is saved with neural embeddings</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="neon-text">•</span>
+                  <span className="text-accent">·</span>
                   <span>Generate unlimited vocals with any lyrics in this voice!</span>
                 </li>
               </ul>

@@ -104,7 +104,7 @@ router.post(
       name,
       description: description || `Cloned voice from ${vocalFile.originalname}`,
       voice_model_key: '', // Will be set below
-      provider: 'elevenlabs', // Use ElevenLabs voice cloning (Creator plan)
+      provider: 'camb-ai', // Use CAMB.AI MARS8 for highest-fidelity cloning (2.3s minimum)
       default_style_controls: defaultControls,
       is_cloned: true,
       voice_profile: voiceProfile,

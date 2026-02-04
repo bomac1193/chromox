@@ -2,6 +2,7 @@ import { Dialog } from '@headlessui/react';
 import { useEffect, useRef, useState } from 'react';
 import { StyleControls } from '../types';
 import { generatePersonaIdea } from '../lib/api';
+import { PaletteIcon } from './Icons';
 
 const baseControls: StyleControls = {
   brightness: 0.5,
@@ -34,7 +35,7 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [voiceKey, setVoiceKey] = useState('');
-  const [provider, setProvider] = useState('kits-ai');
+  const [provider, setProvider] = useState('camb-ai');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -103,7 +104,7 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
     setName('');
     setDescription('');
     setVoiceKey('');
-    setProvider('kits-ai');
+    setProvider('camb-ai');
     setImage(null);
     setImageFocus({ x: 50, y: 50 });
   }
@@ -123,16 +124,16 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
     <Dialog open={open} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-black/90 p-6 shadow-[0_0_65px_rgba(0,0,0,0.65)]">
+        <Dialog.Panel className="w-full max-w-md rounded-2xl border border-border-default bg-canvas p-6 shadow-2xl">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <Dialog.Title className="text-2xl font-semibold text-white">Forge Persona Artifact</Dialog.Title>
+            <Dialog.Title className="font-display text-2xl font-semibold">Forge Persona Artifact</Dialog.Title>
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-white/60">
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted">
                 <input
                   type="checkbox"
                   checked={useMononym}
                   onChange={(e) => setUseMononym(e.target.checked)}
-                  className="accent-cyan-400"
+                  className="accent-blue-300"
                 />
                 Mononym
               </label>
@@ -140,56 +141,60 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                 type="button"
                 onClick={handleRandomize}
                 disabled={randomizing}
-                className="rounded-md border border-white/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.4em] text-white/80 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-md border border-border-default px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {randomizing ? 'Weaving…' : 'AI Randomize'}
+                {randomizing ? 'Weaving...' : 'AI Randomize'}
               </button>
             </div>
           </div>
           <div className="space-y-4">
-            <label className="block text-sm text-white/70">
+            <label className="block text-sm text-secondary">
               Name
               <input
-                className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
+                className="mt-1 w-full rounded-md border border-border-default bg-surface px-3 py-2 text-primary focus:border-accent focus:outline-none"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
-            <label className="block text-sm text-white/70">
+            <label className="block text-sm text-secondary">
               Description
               <textarea
-                className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
+                className="mt-1 w-full rounded-md border border-border-default bg-surface px-3 py-2 text-primary focus:border-accent focus:outline-none"
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </label>
-            <label className="block text-sm text-white/70">
+            <label className="block text-sm text-secondary">
               Provider
               <select
-                className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
+                className="mt-1 w-full rounded-md border border-border-default bg-surface px-3 py-2 text-primary focus:border-accent focus:outline-none"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
               >
+                <option value="camb-ai">CAMB.AI MARS8 (Ultra Clone)</option>
+                <option value="elevenlabs">ElevenLabs</option>
+                <option value="fish-audio">Fish Audio</option>
+                <option value="minimax">MiniMax Audio</option>
                 <option value="kits-ai">Kits AI</option>
-                <option value="uberduck">Uberduck</option>
-                <option value="cantai">Cantai</option>
+                <option value="rvc">RVC (Open Source)</option>
+                <option value="openai-voice">OpenAI Voice</option>
               </select>
             </label>
-            <label className="block text-sm text-white/70">
+            <label className="block text-sm text-secondary">
               Voice Model Key
               <input
-                className="mt-1 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white focus:border-neon focus:outline-none"
+                className="mt-1 w-full rounded-md border border-border-default bg-surface px-3 py-2 text-primary focus:border-accent focus:outline-none"
                 value={voiceKey}
                 onChange={(e) => setVoiceKey(e.target.value)}
               />
             </label>
             <div>
-              <label className="block text-sm text-white/70">Persona Image</label>
+              <label className="block text-sm text-secondary">Persona Image</label>
               <div className="mt-2 flex items-center gap-3">
                 <div
                   ref={previewRef}
-                  className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                  className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-elevated"
                   onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
                   onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
                   onTouchStart={(e) => {
@@ -211,17 +216,17 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                       style={{ objectPosition: `${imageFocus.x}% ${imageFocus.y}%` }}
                     />
                   ) : (
-                    <span className="text-lg text-white/50">🎨</span>
+                    <PaletteIcon className="text-muted" size={18} />
                   )}
                   {imagePreview && (
-                    <div className="pointer-events-none absolute inset-0 border border-white/20 shadow-inner" />
+                    <div className="pointer-events-none absolute inset-0 border border-border-emphasis shadow-inner" />
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="rounded-md border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:border-white/40"
+                    className="rounded-md border border-border-default px-3 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis"
                   >
                     Upload
                   </button>
@@ -229,7 +234,7 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                     <button
                       type="button"
                       onClick={() => setImage(null)}
-                      className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white/60 hover:border-white/30 hover:text-white"
+                      className="rounded-md border border-border-subtle px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted transition hover:border-border-default hover:text-secondary"
                     >
                       Clear
                     </button>
@@ -237,7 +242,7 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
                 </div>
               </div>
               {imagePreview && (
-                <p className="mt-2 text-xs text-white/60">Drag inside the square to set the saved framing.</p>
+                <p className="mt-2 text-xs text-muted">Drag inside the square to set the saved framing.</p>
               )}
               <input
                 ref={fileInputRef}
@@ -252,7 +257,7 @@ export function CreatePersonaModal({ open, onClose, onSubmit }: Props) {
             </div>
             <button
               onClick={handleSubmit}
-              className="mt-4 w-full rounded-md border border-neon/30 bg-neon/20 py-2 text-sm font-semibold uppercase tracking-[0.5em] text-neon hover:bg-neon/30"
+              className="mt-4 w-full rounded-md bg-accent py-2 text-sm font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover"
             >
               Forge Artifact
             </button>

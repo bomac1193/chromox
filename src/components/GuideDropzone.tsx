@@ -20,9 +20,13 @@ export function GuideDropzone({ onFile }: Props) {
 
   return (
     <div
-      className={`glass-dropzone ${dragging ? 'glass-dropzone-active' : ''} ${
-        file ? '!border-cyan-400/50' : ''
-      } flex h-24 cursor-pointer flex-col items-center justify-center rounded-xl text-center transition-all`}
+      className={`flex h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-all ${
+        dragging
+          ? 'border-accent bg-accent/10'
+          : file
+            ? 'border-accent/30 bg-surface'
+            : 'border-border-default bg-surface'
+      }`}
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -45,13 +49,13 @@ export function GuideDropzone({ onFile }: Props) {
     >
       {file ? (
         <div>
-          <p className="neon-text text-sm font-semibold">{file.name}</p>
-          <p className="mt-1 text-xs text-white/50">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+          <p className="text-sm font-medium text-accent">{file.name}</p>
+          <p className="mt-1 text-xs text-muted">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
         </div>
       ) : (
         <div>
-          <p className="text-sm font-medium text-white/60">Drop guide vocal or click</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-white/40">WAV · MP3 · AIFF</p>
+          <p className="text-sm font-medium text-secondary">Drop guide vocal or click</p>
+          <p className="mt-1 text-xs uppercase tracking-wider text-muted">WAV · MP3 · AIFF</p>
         </div>
       )}
     </div>

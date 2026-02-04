@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { listRenderJobs, findRenderJob, createRenderJob } from '../services/renderStore';
+import { listRenderJobs, findRenderJob, createRenderJob, setRenderRating } from '../services/renderStore';
+import { RenderRating } from '../types';
 import { findPersona } from '../services/personaStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
 import { ChromaticCorePipeline } from '../services/renderPipeline';
 import { defaultEffectSettings } from '../services/effectsProcessor';
+import { findFolioClip } from '../services/folioStore';
+import { recordSonicSignal } from '../services/sonicGenomeStore';
+import { addRelicToPersona } from '../services/personaStore';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -48,7 +52,9 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
     const guideSample = guideSampleId
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
-    const guideFilePath = guideSample?.path ?? req.file?.path ?? original.guideFilePath;
+    const folioClipId = overrides.folioClipId;
+    const folioClip = folioClipId ? findFolioClip(folioClipId) : undefined;
+    const guideFilePath = folioClip?.audioPath ?? guideSample?.path ?? req.file?.path ?? original.guideFilePath;
     const guideUseLyrics =
       overrides.guideUseLyrics !== undefined
         ? overrides.guideUseLyrics === 'true'
@@ -106,6 +112,58 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
     console.error('[RenderLibrary] Replay failed', error);
     res.status(500).json({ error: 'Replay failed', details: (error as Error).message });
   }
+});
+
+router.post('/renders/:id/rating', (req, res) => {
+  const { rating } = req.body ?? {};
+  const allowed: RenderRating[] = ['like', 'dislike', 'neutral'];
+  if (!allowed.includes(rating)) {
+    return res.status(400).json({ error: 'Invalid rating' });
+  }
+  const updated = setRenderRating(req.params.id, rating);
+  if (!updated) {
+    return res.status(404).json({ error: 'Render not found' });
+  }
+
+  // Emit sonic signal for like/dislike
+  try {
+    if (rating === 'like' || rating === 'dislike') {
+      recordSonicSignal({
+        type: rating,
+        value: req.params.id,
+        metadata: {
+          personaId: updated.personaId,
+          effectPreset: updated.effects?.preset,
+          guideSampleId: updated.guideSampleId
+        }
+      });
+
+      // Auto-relic: every 5th like for a persona generates a relic
+      if (rating === 'like') {
+        const allJobs = listRenderJobs();
+        const personaLikes = allJobs.filter(
+          (j) => j.personaId === updated.personaId && j.rating === 'like'
+        );
+        if (personaLikes.length > 0 && personaLikes.length % 5 === 0) {
+          const tierMap: Record<number, number> = { 5: 1, 10: 2, 15: 2, 20: 3, 25: 3 };
+          const tier = tierMap[personaLikes.length] ?? Math.min(4, Math.floor(personaLikes.length / 10) + 1);
+          addRelicToPersona(updated.personaId, {
+            name: `Resonance Fragment #${Math.ceil(personaLikes.length / 5)}`,
+            description: `Auto-generated from ${personaLikes.length} liked renders`,
+            lore: `This relic crystallized after the ${personaLikes.length}th appreciation signal. Style: ${updated.stylePrompt || 'unknown'}.`,
+            tier,
+            icon: tier >= 3 ? '***' : tier >= 2 ? '**' : '*',
+            audioUrl: updated.audioUrl,
+            sourceRenderId: updated.id
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[SonicGenome] Failed to record rating signal', e);
+  }
+
+  res.json(updated);
 });
 
 export default router;

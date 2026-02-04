@@ -2,6 +2,7 @@ import { Dialog } from '@headlessui/react';
 import { useEffect, useRef, useState } from 'react';
 import { Persona } from '../types';
 import { API_HOST, generatePersonaIdea } from '../lib/api';
+import { MicIcon } from './Icons';
 
 type Props = {
   open: boolean;
@@ -126,16 +127,16 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
     <Dialog open={open} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950/95 p-6 shadow-[0_0_65px_rgba(0,0,0,0.7)]">
+        <Dialog.Panel className="w-full max-w-md rounded-2xl border border-border-default bg-canvas p-6 shadow-2xl">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Dialog.Title className="text-xl font-semibold text-white">Edit Persona</Dialog.Title>
+            <Dialog.Title className="font-display text-xl font-semibold">Edit Persona</Dialog.Title>
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-[11px] uppercase tracking-[0.4em] text-white/60">
+              <label className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted">
                 <input
                   type="checkbox"
                   checked={useMononym}
                   onChange={(e) => setUseMononym(e.target.checked)}
-                  className="accent-cyan-400"
+                  className="accent-blue-300"
                 />
                 Mononym
               </label>
@@ -143,57 +144,61 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
                 type="button"
                 onClick={handleRandomize}
                 disabled={!persona || randomizing}
-                className="rounded-md border border-white/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.4em] text-white/80 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-md border border-border-default px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {randomizing ? 'Weaving…' : 'AI Randomize'}
+                {randomizing ? 'Weaving...' : 'AI Randomize'}
               </button>
             </div>
           </div>
           {persona ? (
-            <div className="space-y-4 text-sm text-white/80">
+            <div className="space-y-4 text-sm text-secondary">
               <label className="block">
-                <span className="text-xs uppercase tracking-[0.4em] text-white/50">Name</span>
+                <span className="text-xs uppercase tracking-wide text-muted">Name</span>
                 <input
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </label>
               <label className="block">
-                <span className="text-xs uppercase tracking-[0.4em] text-white/50">Description</span>
+                <span className="text-xs uppercase tracking-wide text-muted">Description</span>
                 <textarea
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </label>
               <label className="block">
-                <span className="text-xs uppercase tracking-[0.4em] text-white/50">Provider</span>
+                <span className="text-xs uppercase tracking-wide text-muted">Provider</span>
                 <select
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
                 >
+                  <option value="camb-ai">CAMB.AI MARS8 (Ultra Clone)</option>
+                  <option value="elevenlabs">ElevenLabs</option>
+                  <option value="fish-audio">Fish Audio</option>
+                  <option value="minimax">MiniMax Audio</option>
                   <option value="kits-ai">Kits AI</option>
-                  <option value="uberduck">Uberduck</option>
-                  <option value="cantai">Cantai</option>
+                  <option value="rvc">RVC (Open Source)</option>
+                  <option value="openai-voice">OpenAI Voice</option>
                 </select>
               </label>
               <label className="block">
-                <span className="text-xs uppercase tracking-[0.4em] text-white/50">Voice Model Key</span>
+                <span className="text-xs uppercase tracking-wide text-muted">Voice Model Key</span>
                 <input
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
                   value={voiceKey}
                   onChange={(e) => setVoiceKey(e.target.value)}
                 />
               </label>
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-white/50">Portrait</p>
+                <p className="text-xs uppercase tracking-wide text-muted">Portrait</p>
                 <div className="mt-2 flex items-center gap-3">
                   <div
                     ref={previewRef}
-                    className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                    className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-elevated"
                     onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
                     onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
                     onTouchStart={(e) => {
@@ -215,15 +220,15 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
                         style={{ objectPosition: `${imageFocus.x}% ${imageFocus.y}%` }}
                       />
                     ) : (
-                      <span className="text-lg text-white/50">🎤</span>
+                      <MicIcon className="text-muted" size={18} />
                     )}
-                    {preview && <div className="pointer-events-none absolute inset-0 border border-white/20 shadow-inner" />}
+                    {preview && <div className="pointer-events-none absolute inset-0 border border-border-emphasis shadow-inner" />}
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="rounded-md border border-white/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.4em] text-white hover:border-white/40"
+                      className="rounded-md border border-border-default px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis"
                     >
                       Upload
                     </button>
@@ -231,7 +236,7 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
                       <button
                         type="button"
                         onClick={() => setImage(null)}
-                        className="rounded-md border border-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.4em] text-white/60 hover:border-white/30 hover:text-white"
+                        className="rounded-md border border-border-subtle px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted transition hover:border-border-default hover:text-secondary"
                       >
                         Clear
                       </button>
@@ -239,7 +244,7 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
                   </div>
                 </div>
                 {preview && (
-                  <p className="mt-2 text-[11px] text-white/50">Drag to reframe the portrait before saving.</p>
+                  <p className="mt-2 text-[11px] text-muted">Drag to reframe the portrait before saving.</p>
                 )}
                 <input
                   ref={fileInputRef}
@@ -256,21 +261,21 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-white/70 hover:border-white/40"
+                  className="rounded-lg border border-border-default px-4 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.4em] text-cyan-200 hover:border-cyan-200/70"
+                  className="rounded-lg bg-accent px-4 py-2 text-xs font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover"
                 >
                   Save Changes
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-white/70">Select a persona to edit.</p>
+            <p className="text-sm text-secondary">Select a persona to edit.</p>
           )}
         </Dialog.Panel>
       </div>

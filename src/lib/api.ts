@@ -1,5 +1,18 @@
 import axios from 'axios';
-import { Persona, StyleControls, EffectSettings, RenderHistoryItem, GuideSample } from '../types';
+import {
+  Persona,
+  StyleControls,
+  EffectSettings,
+  RenderHistoryItem,
+  GuideSample,
+  GuideSuggestion,
+  TasteProfile,
+  FolioClip,
+  SonicGenomeSummary,
+  SonicArchetype,
+  Relic,
+  RelicPackSummary
+} from '../types';
 
 export const API_HOST = 'http://localhost:4414';
 
@@ -110,6 +123,7 @@ export async function renderPerformance(payload: {
   guideUseLyrics?: boolean;
   guideTempo?: number;
   guide?: File;
+  folioClipId?: string;
 }) {
   const formData = new FormData();
   formData.append('personaId', payload.personaId);
@@ -141,6 +155,9 @@ export async function renderPerformance(payload: {
   if (payload.guide) {
     formData.append('guide', payload.guide);
   }
+  if (payload.folioClipId) {
+    formData.append('folioClipId', payload.folioClipId);
+  }
   const { data } = await client.post<{ audioUrl: string; render: RenderHistoryItem }>('/render', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
@@ -161,6 +178,7 @@ export async function previewPerformance(payload: {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  folioClipId?: string;
 }) {
   const formData = new FormData();
   formData.append('personaId', payload.personaId);
@@ -191,6 +209,9 @@ export async function previewPerformance(payload: {
   }
   if (payload.guide) {
     formData.append('guide', payload.guide);
+  }
+  if (payload.folioClipId) {
+    formData.append('folioClipId', payload.folioClipId);
   }
   const { data } = await client.post<{ audioUrl: string }>('/render/preview', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -224,5 +245,128 @@ export async function uploadGuideSample(personaId: string, file: File, name?: st
 
 export async function generatePersonaIdea(options?: { seed?: string; mononym?: boolean }) {
   const { data } = await client.post<{ name: string; description: string }>('/llm/persona-idea', options ?? {});
+  return data;
+}
+
+export async function fetchGuideSuggestions(personaId: string) {
+  const { data } = await client.get<GuideSuggestion[]>(`/personas/${personaId}/guide-suggestions`);
+  return data;
+}
+
+export async function mintGuideClip(
+  personaId: string,
+  mode?: 'glitch' | 'dream' | 'anthem',
+  duration?: number,
+  dry?: boolean
+) {
+  const { data } = await client.post<GuideSample>(`/personas/${personaId}/guide-suggestions/mint`, {
+    mode,
+    duration,
+    dry
+  });
+  return data;
+}
+
+export async function rateRenderJob(jobId: string, rating: 'like' | 'dislike' | 'neutral') {
+  const { data } = await client.post<RenderHistoryItem>(`/renders/${jobId}/rating`, { rating });
+  return data;
+}
+
+export async function fetchTasteProfile(personaId: string) {
+  const { data } = await client.get<TasteProfile>(`/personas/${personaId}/taste-profile`);
+  return data;
+}
+
+export async function fetchFolioClips() {
+  const { data } = await client.get<FolioClip[]>('/folio');
+  return data;
+}
+
+export async function addToFolio(
+  payload: { renderId: string; name?: string } | { audio: File; name: string }
+) {
+  if ('audio' in payload) {
+    const formData = new FormData();
+    formData.append('audio', payload.audio);
+    formData.append('name', payload.name);
+    const { data } = await client.post<FolioClip>('/folio', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return data;
+  }
+  const { data } = await client.post<FolioClip>('/folio', {
+    renderId: payload.renderId,
+    name: payload.name
+  });
+  return data;
+}
+
+export async function removeFromFolio(id: string) {
+  await client.delete(`/folio/${id}`);
+}
+
+// ── Sonic Genome ───────────────────────────────────────────────────
+
+export async function fetchSonicGenome() {
+  const { data } = await client.get<SonicGenomeSummary>('/genome');
+  return data;
+}
+
+export async function sendSonicSignal(
+  type: string,
+  value?: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    await client.post('/genome/signal', { type, value, metadata });
+  } catch {
+    // fire-and-forget
+  }
+}
+
+export async function fetchSonicArchetypes() {
+  const { data } = await client.get<Record<string, SonicArchetype>>('/genome/archetypes');
+  return data;
+}
+
+export async function fetchSonicGamification() {
+  const { data } = await client.get('/genome/gamification');
+  return data;
+}
+
+// ── Persona Relics ─────────────────────────────────────────────────
+
+export async function fetchPersonaRelics(personaId: string) {
+  const { data } = await client.get<Relic[]>(`/personas/${personaId}/relics`);
+  return data;
+}
+
+export async function createRelic(personaId: string, relic: {
+  name: string;
+  description?: string;
+  lore?: string;
+  tier?: number;
+  icon?: string;
+  audioUrl?: string;
+  sourceRenderId?: string;
+}) {
+  const { data } = await client.post<Relic>(`/personas/${personaId}/relics`, relic);
+  return data;
+}
+
+// ── Reliquary ──────────────────────────────────────────────────────
+
+export async function fetchRelicPacks() {
+  const { data } = await client.get<RelicPackSummary[]>('/reliquary/packs');
+  return data;
+}
+
+export async function fetchReliquaryUnlocks() {
+  const { data } = await client.get<Record<string, boolean>>('/reliquary/unlocks');
+  return data;
+}
+
+export async function unlockRelicPack(packId: string, password: string) {
+  const { data } = await client.post('/reliquary/unlock', { packId, password });
   return data;
 }

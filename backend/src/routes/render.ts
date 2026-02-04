@@ -6,6 +6,8 @@ import { StyleControls } from '../types';
 import { defaultEffectSettings } from '../services/effectsProcessor';
 import { createRenderJob } from '../services/renderStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
+import { findFolioClip } from '../services/folioStore';
+import { recordSonicSignal } from '../services/sonicGenomeStore';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -34,7 +36,9 @@ router.post('/render', upload.single('guide'), async (req, res) => {
     const guideSample = guideSampleId
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
-    const guideFilePath = guideSample?.path || req.file?.path;
+    const folioClipId = req.body.folioClipId;
+    const folioClip = folioClipId ? findFolioClip(folioClipId) : undefined;
+    const guideFilePath = folioClip?.audioPath || guideSample?.path || req.file?.path;
     const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';
@@ -67,7 +71,12 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       guideSampleId,
       guideMatchIntensity,
       guideUseLyrics,
-      guideTempo
+      guideTempo,
+      // Pass phonetic metadata from guide sample (fixes mechanical/alien sound)
+      phoneticLyrics: guideSample?.phoneticTranscript,
+      pronunciationHints: guideSample?.pronunciationHints,
+      prosodyHints: guideSample?.prosodyHints,
+      detectedAccent: guideSample?.accentMetadata?.detected
     });
 
     // Convert file path to URL
@@ -93,6 +102,22 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       guideUseLyrics,
       guideTempo
     });
+
+    // Emit sonic signal
+    try {
+      recordSonicSignal({
+        type: 'render',
+        value: renderRecord.id,
+        metadata: {
+          personaId,
+          effectPreset: effects.preset,
+          guideSampleId,
+          stylePrompt: req.body.stylePrompt
+        }
+      });
+    } catch (e) {
+      console.warn('[SonicGenome] Failed to record render signal', e);
+    }
 
     res.json({ audioUrl, render: renderRecord });
   } catch (error) {
@@ -125,7 +150,9 @@ router.post('/render/preview', upload.single('guide'), async (req, res) => {
     const guideSample = guideSampleId
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
-    const guideFilePath = guideSample?.path || req.file?.path;
+    const folioClipIdPreview = req.body.folioClipId;
+    const folioClipPreview = folioClipIdPreview ? findFolioClip(folioClipIdPreview) : undefined;
+    const guideFilePath = folioClipPreview?.audioPath || guideSample?.path || req.file?.path;
     const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';
@@ -148,7 +175,12 @@ router.post('/render/preview', upload.single('guide'), async (req, res) => {
       guideSampleId,
       guideMatchIntensity,
       guideUseLyrics,
-      guideTempo
+      guideTempo,
+      // Pass phonetic metadata from guide sample (fixes mechanical/alien sound)
+      phoneticLyrics: guideSample?.phoneticTranscript,
+      pronunciationHints: guideSample?.pronunciationHints,
+      prosodyHints: guideSample?.prosodyHints,
+      detectedAccent: guideSample?.accentMetadata?.detected
     });
 
     const fileName = resultPath.split('/').pop();

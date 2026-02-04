@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "2.9.0", features = [] }
+tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
-tauri = { version = "2.9.0", features = ["devtools", "shell-open"] }
+tauri = { version = "2.5.3", features = ["devtools"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

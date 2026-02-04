@@ -68,6 +68,10 @@ ELEVENLABS_API_KEY=demo-key     # ElevenLabs voice cloning
 OPENAI_API_KEY=demo-key         # OpenAI voice synthesis
 RVC_PATH=/opt/RVC               # Path to RVC installation (optional)
 
+# Guide Intelligence / CLAP embeddings
+CLAP_API_URL=http://localhost:5011/embed/audio
+# CLAP_API_KEY=optional-shared-secret  # matches backend/clap_service CLAP_SHARED_SECRET
+
 # LLM for lyric rewriting
 LLM_API_KEY=demo-llm
 ```
@@ -79,6 +83,13 @@ Start the backend API:
 cd backend
 npm run dev
 ```
+
+Boot the CLAP embedding microservice (optional but recommended for guide intelligence):
+```bash
+cd backend/clap_service
+uvicorn server:app --port 5011 --reload
+```
+
 Run the Tauri shell + frontend:
 ```bash
 cd ..

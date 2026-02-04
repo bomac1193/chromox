@@ -14,7 +14,13 @@ export class ChromaticCorePipeline {
   constructor(private provider: SingingProvider) {}
 
   async run(payload: RenderPayload) {
-    const guideData = payload.guideFilePath ? await extractVocalStem(payload.guideFilePath) : undefined;
+    let guideData = payload.guideFilePath ? await extractVocalStem(payload.guideFilePath) : undefined;
+
+    // Trim guide audio if start/end times specified
+    if (guideData && (payload.guideStartTime !== undefined || payload.guideEndTime !== undefined)) {
+      guideData = await trimGuideAudio(guideData.stemPath, payload.guideStartTime, payload.guideEndTime);
+    }
+
     const pitchData = guideData ? await extractPitchAndTiming(guideData.stemPath) : undefined;
     const lyricsData = await transcribeLyrics(guideData?.stemPath ?? '');
 
@@ -44,7 +50,13 @@ export class ChromaticCorePipeline {
       voiceModel: payload.voiceModelKey,
       lyrics: finalLyrics ?? lyricsData.transcript,
       controls: mergedControls,
-      guidePath: pitchData?.stemPath
+      guidePath: pitchData?.stemPath,
+      guideAccentBlend: payload.guideAccentBlend,
+      // Enhanced accent/phonetic support (fixes mechanical/alien sound)
+      pronunciationHints: payload.pronunciationHints,
+      phoneticLyrics: payload.phoneticLyrics,
+      accentType: payload.detectedAccent,
+      prosodyHints: payload.prosodyHints
     });
 
     const outDir = path.join(process.cwd(), 'renders');
@@ -58,11 +70,22 @@ export class ChromaticCorePipeline {
     const tempoAdjustedPath = await applyTempo(processedPath, payload.guideTempo);
     const layeredPath = await applyPresetLayers(tempoAdjustedPath, effects.preset);
 
-    if (payload.previewSeconds) {
-      return await createPreviewSnippet(layeredPath, payload.previewSeconds);
+    // Trim output to match guide duration if specified
+    let finalPath = layeredPath;
+    if (payload.guideStartTime !== undefined || payload.guideEndTime !== undefined) {
+      const duration = payload.guideEndTime && payload.guideStartTime !== undefined
+        ? payload.guideEndTime - payload.guideStartTime
+        : payload.guideEndTime;
+      if (duration) {
+        finalPath = await trimOutputToLength(layeredPath, duration);
+      }
     }
 
-    return layeredPath;
+    if (payload.previewSeconds) {
+      return await createPreviewSnippet(finalPath, payload.previewSeconds);
+    }
+
+    return finalPath;
   }
 }
 
@@ -194,6 +217,50 @@ async function runFilterComplex(filePath: string, outPath: string, filter: strin
     return outPath;
   } catch (error) {
     console.error('[RenderPipeline] Layered effect failed, returning base render.', error);
+    return filePath;
+  }
+}
+
+async function trimGuideAudio(
+  filePath: string,
+  startTime?: number,
+  endTime?: number
+): Promise<{ stemPath: string; quality: number }> {
+  if (startTime === undefined && endTime === undefined) {
+    return { stemPath: filePath, quality: 1.0 };
+  }
+
+  const trimmedPath = filePath.replace(/(\.[a-z0-9]+)$/i, '-trimmed$1');
+  const start = startTime ?? 0;
+  const duration = endTime && endTime > start ? endTime - start : undefined;
+
+  try {
+    let cmd = `ffmpeg -y -hide_banner -loglevel error -ss ${start}`;
+    if (duration) {
+      cmd += ` -t ${duration}`;
+    }
+    cmd += ` -i "${filePath}" -c copy "${trimmedPath}"`;
+
+    await execAsync(cmd);
+    console.log(`[RenderPipeline] Trimmed guide audio: ${start}s to ${endTime ?? 'end'}s`);
+    return { stemPath: trimmedPath, quality: 1.0 };
+  } catch (error) {
+    console.error('[RenderPipeline] Failed to trim guide audio, using original:', error);
+    return { stemPath: filePath, quality: 1.0 };
+  }
+}
+
+async function trimOutputToLength(filePath: string, durationSeconds: number): Promise<string> {
+  const trimmedPath = filePath.replace(/(\.[a-z0-9]+)$/i, '-final$1');
+
+  try {
+    // Trim from start to exact duration, re-encode for clean cut
+    const cmd = `ffmpeg -y -hide_banner -loglevel error -i "${filePath}" -t ${durationSeconds} -acodec copy "${trimmedPath}"`;
+    await execAsync(cmd);
+    console.log(`[RenderPipeline] Trimmed output to ${durationSeconds}s`);
+    return trimmedPath;
+  } catch (error) {
+    console.error('[RenderPipeline] Failed to trim output, using full length:', error);
     return filePath;
   }
 }

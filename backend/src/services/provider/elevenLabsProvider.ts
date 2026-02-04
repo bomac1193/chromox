@@ -43,8 +43,21 @@ export class ElevenLabsProvider implements SingingProvider {
       // Get or create ElevenLabs voice ID for this persona
       const voiceId = await this.getOrCreateVoice(personaId);
 
-      // Convert lyrics to speech with cloned voice
-      const audioBuffer = await this.textToSpeech(voiceId, request.lyrics, request.controls);
+      // Use Speech-to-Speech if guide audio provided, otherwise Text-to-Speech
+      let audioBuffer: Buffer;
+      if (request.guidePath && fs.existsSync(request.guidePath)) {
+        console.log(`[ElevenLabs] Using Speech-to-Speech with guide: ${request.guidePath}`);
+        audioBuffer = await this.speechToSpeech(
+          voiceId,
+          request.guidePath,
+          request.lyrics,
+          request.controls,
+          request.guideAccentBlend
+        );
+      } else {
+        console.log(`[ElevenLabs] Using Text-to-Speech (no guide)`);
+        audioBuffer = await this.textToSpeech(voiceId, request.lyrics, request.controls);
+      }
 
       return {
         audioBuffer,
@@ -168,6 +181,65 @@ export class ElevenLabsProvider implements SingingProvider {
     if (!response.ok) {
       const error = await response.text();
       throw new Error(`ElevenLabs TTS failed: ${error}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  /**
+   * Speech-to-Speech: Converts guide audio to speech with the cloned voice
+   * This maintains timing, prosody, and rhythm from the guide audio
+   *
+   * Uses multilingual model for better accent/language support.
+   * similarity_boost controlled by guideAccentBlend:
+   *   - 0 (left) = low similarity = keep guide accent (Patois, etc.)
+   *   - 1 (right) = high similarity = use persona voice fully
+   */
+  private async speechToSpeech(
+    voiceId: string,
+    guidePath: string,
+    text: string,
+    controls: any,
+    accentBlend?: number
+  ): Promise<Buffer> {
+    // Map Chromox controls to ElevenLabs voice settings
+    // similarity_boost: 0 = guide accent, 1 = persona voice
+    // Default to 0.5 (50/50 blend)
+    const blend = accentBlend ?? 0.5;
+    const similarityBoost = 0.3 + (blend * 0.65); // Range: 0.3 (guide) to 0.95 (persona)
+
+    const voiceSettings = {
+      stability: 0.6 + controls.roboticism * 0.3,
+      similarity_boost: similarityBoost,
+      style: controls.energy,
+      use_speaker_boost: true
+    };
+
+    console.log(`[ElevenLabs] Accent blend: ${Math.round(blend * 100)}%, similarity_boost: ${similarityBoost.toFixed(2)}`);
+
+    const formData = new FormData();
+    formData.append('audio', fs.createReadStream(guidePath));
+    // Use multilingual model for better language/accent support (Patois, etc.)
+    formData.append('model_id', 'eleven_multilingual_sts_v2');
+    formData.append('voice_settings', JSON.stringify(voiceSettings));
+
+    // DO NOT send text - preserves exact phonetics/accent from guide audio
+    // This ensures lyrics match perfectly and accents sound natural
+
+    const response = await fetch(`${this.baseUrl}/speech-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': this.apiKey
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('[ElevenLabs] Speech-to-Speech failed, falling back to TTS:', error);
+      // Fallback to regular TTS if S2S fails
+      return this.textToSpeech(voiceId, text, controls);
     }
 
     const arrayBuffer = await response.arrayBuffer();

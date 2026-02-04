@@ -19,7 +19,7 @@ export type EffectSettings = {
     | 'rave-ddsp'
     | 'rave-ddsp-8d'
     | 'resonance-8d';
-  preset?: 'clean' | 'vintage' | 'club' | 'raw' | 'shimmer-stack' | 'harmonic-orbit' | 'pitch-warp' | 'choir-cloud' | '8d-swarm';
+  preset?: 'clean' | 'lush' | 'vintage' | 'club' | 'raw' | 'shimmer-stack' | 'harmonic-orbit' | 'pitch-warp' | 'choir-cloud' | '8d-swarm';
   clarity: number;
   air: number;
   drive: number;
@@ -38,7 +38,42 @@ export type GuideSample = {
   name: string;
   originalName: string;
   path: string;
+  url?: string;
   uploaded_at: string;
+  source?: 'user' | 'ai-lab';
+  tags?: string[];
+  transcript?: string;
+  embedding?: number[];
+  tempo?: number;
+  mood?: 'hype' | 'dream' | 'anthem' | 'ambient';
+  aiModel?: string;
+  recommendedUse?: string;
+  mintedFromRenderId?: string;
+  // Accent detection metadata for better persona matching
+  accentMetadata?: {
+    detected: string;
+    confidence: number;
+    language: string;
+    dialect?: string;
+    languageCode?: string;
+  };
+  transcriptionConfidence?: number;
+  transcriptionProvider?: 'assemblyai' | 'deepgram' | 'revai' | 'whisper' | 'ensemble' | 'fallback';
+  // Ensemble details (when multiple APIs used)
+  ensembleDetails?: {
+    primary: { provider: string; confidence: number };
+    secondary?: { provider: string; confidence: number };
+    agreement: number; // 0-1, how much APIs agreed
+    method: 'single' | 'dual' | 'consensus';
+  };
+  // Phonetic pronunciation for fixing Chinese/Russian artifacts
+  phoneticTranscript?: string;
+  pronunciationHints?: Record<string, string>; // word → phonetic pronunciation
+  prosodyHints?: {
+    rhythm: 'syllable-timed' | 'stress-timed' | 'mora-timed';
+    intonation: 'rising' | 'falling' | 'flat' | 'melodic';
+    tempo: 'fast' | 'moderate' | 'slow';
+  };
 };
 
 export type VoiceProfile = {
@@ -80,6 +115,22 @@ export type Persona = {
   voice_profile?: VoiceProfile;
   clone_source?: 'upload' | 'recording' | 'external';
   guide_samples?: GuideSample[];
+  relics?: Relic[];
+};
+
+export type GuideSuggestion = {
+  id: string;
+  title: string;
+  description: string;
+  reason: string;
+  vibe: 'hype' | 'chill' | 'nostalgic' | 'glitch';
+  energyScore: number;
+  matchConfidence: number;
+  sampleId?: string;
+  previewUrl?: string;
+  action: 'use' | 'mint';
+  mintMode?: 'glitch' | 'dream' | 'anthem';
+  transcriptSnippet?: string;
 };
 
 export type RenderPayload = {
@@ -98,6 +149,21 @@ export type RenderPayload = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  guideStartTime?: number;
+  guideEndTime?: number;
+  guideAccentBlend?: number;
+  rating?: RenderRating;
+  // Enhanced accent handling from AssemblyAI/Rev.ai
+  detectedAccent?: string;
+  accentHint?: string;
+  pronunciationGuide?: string;
+  phoneticLyrics?: string; // Phonetically transcribed lyrics
+  pronunciationHints?: Record<string, string>; // Word-level pronunciation hints
+  prosodyHints?: {
+    rhythm: 'syllable-timed' | 'stress-timed' | 'mora-timed';
+    intonation: 'rising' | 'falling' | 'flat' | 'melodic';
+    tempo: 'fast' | 'moderate' | 'slow';
+  };
 };
 
 export type RenderJobRecord = {
@@ -120,4 +186,135 @@ export type RenderJobRecord = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  rating?: RenderRating;
+};
+
+export type RenderRating = 'like' | 'dislike' | 'neutral';
+
+export type FolioClip = {
+  id: string;
+  name: string;
+  audioPath: string;
+  audioUrl: string;
+  source: 'render' | 'upload';
+  sourceRenderId?: string;
+  sourcePersonaName?: string;
+  tags?: string[];
+  duration?: number;
+  added_at: string;
+};
+
+// ── Sonic Genome (Voice Identity) ──────────────────────────────────
+
+export type SonicArchetypeDesignation =
+  | 'S-0' | 'T-1' | 'V-2' | 'L-3' | 'C-4' | 'N-5'
+  | 'H-6' | 'P-7' | 'D-8' | 'F-9' | 'R-10' | 'NULL';
+
+export type SonicArchetype = {
+  designation: SonicArchetypeDesignation;
+  glyph: string;
+  title: string;
+  essence: string;
+  creativeMode: string;
+  shadow: string;
+  color: string;
+};
+
+export type SonicSignalType =
+  | 'render' | 'like' | 'dislike' | 'save_to_folio' | 'adjust_effects'
+  | 'use_guide' | 'mint' | 'replay' | 'preview' | 'rate' | 'preference';
+
+export type SonicSignal = {
+  type: SonicSignalType;
+  value?: string;
+  weight: number;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+  archetypeWeights: Record<string, number>;
+};
+
+export type SonicKeywordScore = {
+  score: number;
+  count: number;
+};
+
+export type SonicGenomeGamification = {
+  xp: number;
+  tier: number;
+  achievements: string[];
+  streak: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
+  totalRenders: number;
+  totalLikes: number;
+  totalMints: number;
+  uniqueEffects: string[];
+  uniqueGuides: string[];
+};
+
+export type SonicGenome = {
+  userId: string;
+  version: number;
+  archetype: {
+    primary: SonicArchetypeDesignation | null;
+    secondary: SonicArchetypeDesignation | null;
+    distribution: Record<string, number>;
+    confidence: number;
+    classifiedAt: string | null;
+  };
+  keywordScores: Record<string, SonicKeywordScore>;
+  sonicPatterns: {
+    dominantTextures: string[];
+    avoidTextures: string[];
+    preferredMoods: string[];
+    productionStyle: string[];
+    vocalPreference: string[];
+    spatialPreference: string[];
+  };
+  signals: SonicSignal[];
+  gamification: SonicGenomeGamification;
+  confidence: number;
+  itemCount: number;
+  lastUpdated: string | null;
+  createdAt: string;
+};
+
+// ── Boveda (Relics & Reliquary) ────────────────────────────────────
+
+export type Relic = {
+  id: string;
+  name: string;
+  description: string;
+  lore: string;
+  tier: number;
+  icon: string;
+  audioUrl?: string;
+  effectChain?: string;
+  sourceRenderId?: string;
+  sourcePersonaId: string;
+  created_at: string;
+};
+
+export type RelicPack = {
+  id: string;
+  name: string;
+  description: string;
+  hashedPassword: string;
+  relics: Array<Omit<Relic, 'sourcePersonaId' | 'created_at'>>;
+};
+
+export type TasteProfile = {
+  personaId: string;
+  totalRenders: number;
+  likes: number;
+  dislikes: number;
+  favoriteGuide?: {
+    id: string;
+    name: string;
+    mood?: string;
+  };
+  recentLabels: string[];
+  energeticPreference: number;
+  glitchAffinity: number;
+  recommendedMintMode: 'glitch' | 'dream' | 'anthem';
 };
