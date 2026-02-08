@@ -2,32 +2,493 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * CHROMOX × SWANBLADE DESIGN SYSTEM
+ * Elegance (swan) meets Precision (blade)
+ * ======================================
+ *
+ * Typography Hierarchy:
+ * - Fraunces (H1-H3): Elegant, expressive, creative presence
+ * - Sohne/Inter (H4-H6, body, UI): Clean, precise, functional
+ *
+ * Color Philosophy:
+ * - Warm magenta accent for creative energy
+ * - Sharp black/white contrast for precision
+ */
+
+/*
+ * Typography:
+ * - Fraunces (display/headings) - loaded via index.html
+ * - Sohne (body/UI) - loaded via @font-face below
+ */
+
+/* Sohne - Klim Type Foundry */
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/TestSohne-Buch-BF663d89cd32e6a.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/TestSohne-Kraftig-BF663d89cd37e26.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/TestSohne-Halbfett-BF663d89cd2d67b.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sohne';
+  src: url('/fonts/TestSohne-Fett-BF663d89cca89ff.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Swanblade Light Palette */
+  --brand-bg: #FAFAFA;
+  --brand-surface: #FFFFFF;
+  --brand-text: #0A0A0A;
+  --brand-secondary: #6A6A6A;
+  --brand-border: #E0E0E0;
+  /* Black accent for UI elements */
+  --brand-accent: #0A0A0A;
+  --brand-accent-hover: #2A2A2A;
+  --brand-accent-subtle: rgba(10, 10, 10, 0.08);
+  /* Tyrian purple for waveforms only */
+  --brand-waveform: #66023C;
+  --brand-waveform-hover: #520230;
+
+  /* Typography Hierarchy */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-subheading: 'Sohne', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: 'Sohne', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Sohne', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Spacing System (8px base) */
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+}
+
 @layer base {
-  :root {
-    color-scheme: dark;
+  /* Remove all rounded corners by default */
+  * {
+    border-radius: 0;
+  }
+
+  /* Smooth, elegant transitions */
+  * {
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
   }
 
   body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    background: #09090B;
     min-height: 100vh;
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* PRIMARY HEADINGS: Fraunces (elegant, expressive) */
+  h1, h2, h3,
+  .font-display {
+    font-family: var(--font-heading);
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  h1 {
+    font-size: 48px;
+    line-height: 56px;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings: "opsz" 72;
+  }
+
+  h2 {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 400;
+    font-variation-settings: "opsz" 48;
+  }
+
+  h3 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 400;
+    font-variation-settings: "opsz" 32;
+  }
+
+  /* SECONDARY HEADINGS: Sohne (clean, precise) */
+  h4, h5, h6 {
+    font-family: var(--font-subheading);
+  }
+
+  h4 {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+  }
+
+  h5 {
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 500;
+  }
+
+  h6 {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+
+  /* Focus states */
+  *:focus {
+    outline: none;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 1px solid var(--brand-text);
+    outline-offset: 2px;
+  }
+
+  /* Disabled state */
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
   }
 }
 
-/* Scrollbar Styling */
-.scroll-slim::-webkit-scrollbar {
+/* Selection - warm accent */
+::selection {
+  background: var(--brand-accent-subtle);
+  color: var(--brand-text);
+}
+
+/* Custom scrollbar - minimal */
+::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
-.scroll-slim::-webkit-scrollbar-thumb {
-  background: rgba(147, 197, 253, 0.2);
-  border-radius: 3px;
+::-webkit-scrollbar-track {
+  background: #FAFAFA;
 }
 
-.scroll-slim::-webkit-scrollbar-thumb:hover {
-  background: rgba(147, 197, 253, 0.4);
+::-webkit-scrollbar-thumb {
+  background: #E0E0E0;
 }
 
-.scroll-slim::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
+::-webkit-scrollbar-thumb:hover {
+  background: #6A6A6A;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: #E0E0E0 #FAFAFA;
+  scrollbar-width: thin;
+}
+
+@layer components {
+  /* Utility classes */
+  .uppercase-label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    font-size: 11px;
+  }
+
+  .card {
+    background: var(--brand-surface);
+    border: 1px solid var(--brand-border);
+    padding: 24px;
+  }
+
+  .btn-primary {
+    background: var(--brand-text);
+    color: var(--brand-bg);
+    border: 1px solid var(--brand-text);
+    padding: 12px 24px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: #2A2A2A;
+    border-color: #2A2A2A;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--brand-text);
+    border: 1px solid var(--brand-border);
+    padding: 12px 24px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--brand-text);
+  }
+
+  .input-field {
+    background: var(--brand-bg);
+    border: 1px solid var(--brand-border);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--brand-text);
+    width: 100%;
+  }
+
+  .input-field:focus {
+    border-color: var(--brand-text);
+    background: var(--brand-surface);
+  }
+
+  .input-field::placeholder {
+    color: var(--brand-secondary);
+  }
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Accent underline for elegance */
+.accent-underline {
+  position: relative;
+}
+
+.accent-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--brand-accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accent-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Accent highlight */
+.accent-highlight {
+  color: var(--brand-accent);
+}
+
+/* Custom range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: var(--brand-border);
+  height: 2px;
+  border-radius: 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--brand-text);
+  border: none;
+  border-radius: 0;
+  margin-top: -5px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--brand-border);
+  height: 2px;
+  border-radius: 0;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--brand-text);
+  border: none;
+  border-radius: 0;
+}
+
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--brand-bg), 0 0 0 4px var(--brand-text);
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface);
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background: var(--brand-text);
+  border-color: var(--brand-text);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--brand-surface);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 1px solid var(--brand-text);
+  outline-offset: 2px;
+}
+
+/* Select styling */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--brand-bg);
+  border: 1px solid var(--brand-border);
+  border-radius: 0;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--brand-text);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236A6A6A' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--brand-text);
+}
+
+/* Textarea styling */
+textarea {
+  font-family: var(--font-body);
+  background: var(--brand-bg);
+  border: 1px solid var(--brand-border);
+  border-radius: 0;
+  color: var(--brand-text);
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-text);
+}
+
+textarea::placeholder {
+  color: var(--brand-secondary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Brand title styling */
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variation-settings: "opsz" 72;
+  letter-spacing: -0.02em;
+}
+
+/* Audio player styling for light theme */
+audio::-webkit-media-controls-panel {
+  background: var(--brand-bg);
+}
+
+/* Border on focus - uses text color for consistency */
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--brand-text) !important;
 }

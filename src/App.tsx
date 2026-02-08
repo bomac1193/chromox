@@ -148,15 +148,10 @@ export default function App() {
       {/* Header */}
       <header className="border-b border-border-default bg-surface">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-6 py-4">
-          {/* Left: Logo & Title */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
-              <LogoIcon className="text-accent" size={20} />
-            </div>
-            <div>
-              <h1 className="font-display text-lg font-semibold tracking-tight">Chromox</h1>
-              <p className="text-xs text-muted">Voice Cloning Studio</p>
-            </div>
+          {/* Left: Title */}
+          <div>
+            <h1 className="font-display text-lg font-semibold tracking-tight">Lōxu</h1>
+            <p className="text-xs text-muted">Burn The Square</p>
           </div>
 
           {/* Right: Actions */}
