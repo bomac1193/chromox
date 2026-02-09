@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { listRenderJobs, findRenderJob, createRenderJob, setRenderRating } from '../services/renderStore';
+import { listRenderJobs, findRenderJob, createRenderJob, setRenderRating, updateRenderLabel } from '../services/renderStore';
 import { RenderRating } from '../types';
 import { findPersona } from '../services/personaStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
 import { ChromaticCorePipeline } from '../services/renderPipeline';
 import { defaultEffectSettings } from '../services/effectsProcessor';
-import { findFolioClip } from '../services/folioStore';
+import { ensureLocalAudio } from '../services/folioStore';
 import { recordSonicSignal } from '../services/sonicGenomeStore';
 import { addRelicToPersona } from '../services/personaStore';
 
@@ -53,8 +53,8 @@ router.post('/renders/:id/replay', upload.single('guide'), async (req, res) => {
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
     const folioClipId = overrides.folioClipId;
-    const folioClip = folioClipId ? findFolioClip(folioClipId) : undefined;
-    const guideFilePath = folioClip?.audioPath ?? guideSample?.path ?? req.file?.path ?? original.guideFilePath;
+    const folioAudioPath = folioClipId ? await ensureLocalAudio(folioClipId) : undefined;
+    const guideFilePath = folioAudioPath ?? guideSample?.path ?? req.file?.path ?? original.guideFilePath;
     const guideUseLyrics =
       overrides.guideUseLyrics !== undefined
         ? overrides.guideUseLyrics === 'true'
@@ -163,6 +163,18 @@ router.post('/renders/:id/rating', (req, res) => {
     console.warn('[SonicGenome] Failed to record rating signal', e);
   }
 
+  res.json(updated);
+});
+
+router.patch('/renders/:id/label', (req, res) => {
+  const { label } = req.body ?? {};
+  if (typeof label !== 'string') {
+    return res.status(400).json({ error: 'Label must be a string' });
+  }
+  const updated = updateRenderLabel(req.params.id, label.trim());
+  if (!updated) {
+    return res.status(404).json({ error: 'Render not found' });
+  }
   res.json(updated);
 });
 

@@ -12,5 +12,9 @@ export const config = {
   },
   effects: {
     serviceUrl: process.env.EFFECTS_SERVICE_URL ?? 'http://localhost:5009'
+  },
+  folio: {
+    apiUrl: process.env.FOLIO_API_URL ?? 'http://localhost:3004',
+    apiKey: process.env.FOLIO_API_KEY ?? ''
   }
 };

@@ -95,3 +95,11 @@ export function setRenderRating(id: string, rating: RenderRating) {
   persist();
   return job;
 }
+
+export function updateRenderLabel(id: string, label: string) {
+  const job = findRenderJob(id);
+  if (!job) return null;
+  job.label = label;
+  persist();
+  return job;
+}

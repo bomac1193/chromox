@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { addGuideSample, findPersona } from '../services/personaStore';
+import { addGuideSample, removeGuideSample, findPersona } from '../services/personaStore';
 import { getGuideSuggestions, mintGuideClip, getTasteProfile } from '../services/guideIntelligence';
 import { recordSonicSignal } from '../services/sonicGenomeStore';
 
@@ -45,6 +45,19 @@ router.post('/personas/:id/guide-samples', upload.single('guide'), async (req, r
     res.status(201).json(entry);
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+router.delete('/personas/:id/guide-samples/:sampleId', (req, res) => {
+  const persona = findPersona(req.params.id);
+  if (!persona) {
+    return res.status(404).json({ error: 'Persona not found' });
+  }
+  const removed = removeGuideSample(req.params.id, req.params.sampleId);
+  if (removed) {
+    res.status(200).json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Guide sample not found' });
   }
 });
 

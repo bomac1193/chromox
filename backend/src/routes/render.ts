@@ -6,7 +6,7 @@ import { StyleControls } from '../types';
 import { defaultEffectSettings } from '../services/effectsProcessor';
 import { createRenderJob } from '../services/renderStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
-import { findFolioClip } from '../services/folioStore';
+import { ensureLocalAudio } from '../services/folioStore';
 import { recordSonicSignal } from '../services/sonicGenomeStore';
 
 const router = Router();
@@ -37,8 +37,8 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
     const folioClipId = req.body.folioClipId;
-    const folioClip = folioClipId ? findFolioClip(folioClipId) : undefined;
-    const guideFilePath = folioClip?.audioPath || guideSample?.path || req.file?.path;
+    const folioAudioPath = folioClipId ? await ensureLocalAudio(folioClipId) : undefined;
+    const guideFilePath = folioAudioPath || guideSample?.path || req.file?.path;
     const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';
@@ -151,8 +151,8 @@ router.post('/render/preview', upload.single('guide'), async (req, res) => {
       ? persona.guide_samples?.find((sample) => sample.id === guideSampleId)
       : undefined;
     const folioClipIdPreview = req.body.folioClipId;
-    const folioClipPreview = folioClipIdPreview ? findFolioClip(folioClipIdPreview) : undefined;
-    const guideFilePath = folioClipPreview?.audioPath || guideSample?.path || req.file?.path;
+    const folioAudioPathPreview = folioClipIdPreview ? await ensureLocalAudio(folioClipIdPreview) : undefined;
+    const guideFilePath = folioAudioPathPreview || guideSample?.path || req.file?.path;
     const guideUseLyrics = req.body.guideUseLyrics === 'true';
     const accent = req.body.accent;
     const accentLocked = req.body.accentLocked === 'true';

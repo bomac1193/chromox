@@ -4,10 +4,26 @@ import { StyleControls } from '../types';
 import { API_HOST } from '../lib/api';
 import { LogoIcon, MicIcon, UploadIcon } from './Icons';
 
+type DetectionResult = {
+  voiceType: 'speech' | 'singing' | 'mixed';
+  voiceTypeConfidence: number;
+  accent: string;
+  accentLabel: string;
+  accentConfidence: number;
+  audioQuality: 'studio' | 'good' | 'acceptable' | 'poor';
+  qualityScore: number;
+  duration: number;
+  recommendedMode: 'quick' | 'studio' | 'diaspora';
+  modeLabel: string;
+  recommendedProvider: string;
+  explanation: string;
+};
+
 type AnalysisResult = {
   success: boolean;
   profile: any;
   suggestedControls: StyleControls;
+  detection?: DetectionResult;
   message: string;
 };
 
@@ -196,40 +212,103 @@ export function VoiceCloneModal({ open, onClose, onPersonaCreated }: Props) {
               </div>
             </div>
 
-            {/* Analysis Results */}
+            {/* Analysis Results with Auto-Detection */}
             {analysis && (
-              <div className="rounded-2xl border border-border-default bg-elevated p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-accent" />
-                  <p className="text-sm font-medium uppercase tracking-wider text-accent">
-                    Voice Analysis Complete
+              <div className="space-y-4">
+                {/* Detection Summary */}
+                {analysis.detection && (
+                  <div className="border border-border-default bg-surface p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-accent" />
+                        <p className="text-sm font-medium uppercase tracking-wider">
+                          Auto-Detected
+                        </p>
+                      </div>
+                      <span className="border border-border-default px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                        {analysis.detection.modeLabel}
+                      </span>
+                    </div>
+
+                    {/* Detection Grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="border border-border-subtle bg-canvas p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted">Voice Type</p>
+                        <p className="mt-1 text-sm font-semibold capitalize">
+                          {analysis.detection.voiceType}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {Math.round(analysis.detection.voiceTypeConfidence * 100)}% confidence
+                        </p>
+                      </div>
+                      <div className="border border-border-subtle bg-canvas p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted">Accent</p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {analysis.detection.accentLabel}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {Math.round(analysis.detection.accentConfidence * 100)}% confidence
+                        </p>
+                      </div>
+                      <div className="border border-border-subtle bg-canvas p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted">Quality</p>
+                        <p className="mt-1 text-sm font-semibold capitalize">
+                          {analysis.detection.audioQuality}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {Math.round(analysis.detection.duration)}s audio
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Provider Recommendation */}
+                    <div className="mt-4 border-t border-border-subtle pt-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted">Recommended Provider</p>
+                          <p className="mt-1 text-sm font-semibold uppercase">
+                            {analysis.detection.recommendedProvider}
+                          </p>
+                        </div>
+                        <p className="max-w-xs text-right text-xs text-secondary">
+                          {analysis.detection.explanation}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Voice Characteristics */}
+                <div className="border border-border-default bg-surface p-5">
+                  <p className="mb-4 text-sm font-medium uppercase tracking-wider text-muted">
+                    Voice Characteristics
                   </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted">Pitch Range</p>
-                    <p className="mt-1 text-lg font-semibold">
-                      {analysis.profile.characteristics.pitchRange.min.toFixed(0)} -{' '}
-                      {analysis.profile.characteristics.pitchRange.max.toFixed(0)} Hz
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted">Brightness</p>
-                    <p className="mt-1 text-lg font-semibold text-accent">
-                      {(analysis.profile.characteristics.brightness * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted">Breathiness</p>
-                    <p className="mt-1 text-lg font-semibold text-accent">
-                      {(analysis.profile.characteristics.breathiness * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-border-subtle bg-canvas p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted">Vibrato</p>
-                    <p className="mt-1 text-lg font-semibold">
-                      {analysis.profile.characteristics.vibratoRate.toFixed(1)} Hz
-                    </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border border-border-subtle bg-canvas p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted">Pitch Range</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {analysis.profile.characteristics.pitchRange.min.toFixed(0)} -{' '}
+                        {analysis.profile.characteristics.pitchRange.max.toFixed(0)} Hz
+                      </p>
+                    </div>
+                    <div className="border border-border-subtle bg-canvas p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted">Brightness</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {(analysis.profile.characteristics.brightness * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                    <div className="border border-border-subtle bg-canvas p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted">Breathiness</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {(analysis.profile.characteristics.breathiness * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                    <div className="border border-border-subtle bg-canvas p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted">Vibrato</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {analysis.profile.characteristics.vibratoRate.toFixed(1)} Hz
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

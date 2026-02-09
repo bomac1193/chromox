@@ -243,6 +243,10 @@ export async function uploadGuideSample(personaId: string, file: File, name?: st
   return data;
 }
 
+export async function deleteGuideSample(personaId: string, sampleId: string) {
+  await client.delete(`/personas/${personaId}/guide-samples/${sampleId}`);
+}
+
 export async function generatePersonaIdea(options?: { seed?: string; mononym?: boolean }) {
   const { data } = await client.post<{ name: string; description: string }>('/llm/persona-idea', options ?? {});
   return data;
@@ -269,6 +273,11 @@ export async function mintGuideClip(
 
 export async function rateRenderJob(jobId: string, rating: 'like' | 'dislike' | 'neutral') {
   const { data } = await client.post<RenderHistoryItem>(`/renders/${jobId}/rating`, { rating });
+  return data;
+}
+
+export async function updateRenderLabel(jobId: string, label: string) {
+  const { data } = await client.patch<RenderHistoryItem>(`/renders/${jobId}/label`, { label });
   return data;
 }
 

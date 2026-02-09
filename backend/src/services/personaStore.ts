@@ -147,6 +147,18 @@ export async function addGuideSample(personaId: string, sample: GuideSampleInput
   return entry;
 }
 
+export function removeGuideSample(personaId: string, sampleId: string) {
+  const persona = findPersona(personaId);
+  if (!persona) return false;
+  const before = persona.guide_samples?.length ?? 0;
+  persona.guide_samples = (persona.guide_samples ?? []).filter((s) => s.id !== sampleId);
+  if (persona.guide_samples.length < before) {
+    persist();
+    return true;
+  }
+  return false;
+}
+
 // ── Relic CRUD ─────────────────────────────────────────────────────
 
 export function addRelicToPersona(

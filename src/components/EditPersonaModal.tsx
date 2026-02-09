@@ -34,7 +34,9 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
   const [useMononym, setUseMononym] = useState(false);
   const [imageFocus, setImageFocus] = useState({ x: 50, y: 50 });
   const [dragging, setDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const dropzoneRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!persona) return;
@@ -195,57 +197,106 @@ export function EditPersonaModal({ open, persona, onClose, onSubmit }: Props) {
               </label>
               <div>
                 <p className="text-xs uppercase tracking-wide text-muted">Portrait</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <div
-                    ref={previewRef}
-                    className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-elevated"
-                    onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
-                    onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      const touch = e.touches[0];
-                      handlePointerDown(touch.clientX, touch.clientY);
-                    }}
-                    onTouchMove={(e) => {
-                      e.preventDefault();
-                      const touch = e.touches[0];
-                      handlePointerMove(touch.clientX, touch.clientY);
-                    }}
-                  >
-                    {preview ? (
-                      <img
-                        src={preview}
-                        alt="Persona preview"
-                        className="h-full w-full select-none object-cover"
-                        style={{ objectPosition: `${imageFocus.x}% ${imageFocus.y}%` }}
-                      />
-                    ) : (
-                      <MicIcon className="text-muted" size={18} />
-                    )}
-                    {preview && <div className="pointer-events-none absolute inset-0 border border-border-emphasis shadow-inner" />}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="rounded-md border border-border-default px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis"
-                    >
-                      Upload
-                    </button>
-                    {image && (
-                      <button
-                        type="button"
-                        onClick={() => setImage(null)}
-                        className="rounded-md border border-border-subtle px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted transition hover:border-border-default hover:text-secondary"
+                {/* Drag & Drop Zone */}
+                <div
+                  ref={dropzoneRef}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(true);
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file && file.type.startsWith('image/')) {
+                      setImage(file);
+                    }
+                  }}
+                  onClick={() => !preview && fileInputRef.current?.click()}
+                  className={`mt-2 flex cursor-pointer flex-col items-center justify-center border-2 border-dashed p-6 transition ${
+                    isDragOver
+                      ? 'border-primary bg-accent-subtle'
+                      : preview
+                        ? 'border-transparent p-0'
+                        : 'border-border-default hover:border-primary'
+                  }`}
+                >
+                  {preview ? (
+                    <div className="flex w-full items-center gap-4">
+                      {/* Preview Image */}
+                      <div
+                        ref={previewRef}
+                        className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border-default bg-overlay"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          handlePointerDown(e.clientX, e.clientY);
+                        }}
+                        onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
+                        onTouchStart={(e) => {
+                          e.preventDefault();
+                          const touch = e.touches[0];
+                          handlePointerDown(touch.clientX, touch.clientY);
+                        }}
+                        onTouchMove={(e) => {
+                          e.preventDefault();
+                          const touch = e.touches[0];
+                          handlePointerMove(touch.clientX, touch.clientY);
+                        }}
                       >
-                        Clear
-                      </button>
-                    )}
-                  </div>
+                        <img
+                          src={preview}
+                          alt="Persona preview"
+                          className="h-full w-full select-none object-cover"
+                          style={{ objectPosition: `${imageFocus.x}% ${imageFocus.y}%` }}
+                        />
+                        <div className="pointer-events-none absolute inset-0 rounded-full border border-border-emphasis" />
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                          }}
+                          className="border border-border-default px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis"
+                        >
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImage(null);
+                            if (!persona?.image_url) setPreview(null);
+                          }}
+                          className="border border-border-subtle px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted transition hover:border-border-default hover:text-secondary"
+                        >
+                          Remove
+                        </button>
+                        <p className="text-[10px] text-muted">Drag image to reframe</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <MicIcon className="mb-2 text-muted" size={32} />
+                      <p className="text-sm text-secondary">Drop image here</p>
+                      <p className="mt-1 text-xs text-muted">or click to browse</p>
+                    </>
+                  )}
                 </div>
-                {preview && (
-                  <p className="mt-2 text-[11px] text-muted">Drag to reframe the portrait before saving.</p>
-                )}
                 <input
                   ref={fileInputRef}
                   type="file"
