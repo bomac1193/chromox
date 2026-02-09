@@ -103,3 +103,15 @@ export function updateRenderLabel(id: string, label: string) {
   persist();
   return job;
 }
+
+export function updateRenderPersona(id: string, personaId: string, personaName: string, personaImage?: string) {
+  const job = findRenderJob(id);
+  if (!job) return null;
+  job.personaId = personaId;
+  job.personaName = personaName;
+  if (personaImage !== undefined) {
+    job.personaImage = personaImage;
+  }
+  persist();
+  return job;
+}

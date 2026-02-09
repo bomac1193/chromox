@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { listRenderJobs, findRenderJob, createRenderJob, setRenderRating, updateRenderLabel } from '../services/renderStore';
+import { listRenderJobs, findRenderJob, createRenderJob, setRenderRating, updateRenderLabel, updateRenderPersona } from '../services/renderStore';
 import { RenderRating } from '../types';
 import { findPersona } from '../services/personaStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
@@ -172,6 +172,22 @@ router.patch('/renders/:id/label', (req, res) => {
     return res.status(400).json({ error: 'Label must be a string' });
   }
   const updated = updateRenderLabel(req.params.id, label.trim());
+  if (!updated) {
+    return res.status(404).json({ error: 'Render not found' });
+  }
+  res.json(updated);
+});
+
+router.patch('/renders/:id/persona', (req, res) => {
+  const { personaId } = req.body ?? {};
+  if (typeof personaId !== 'string') {
+    return res.status(400).json({ error: 'personaId must be a string' });
+  }
+  const persona = findPersona(personaId);
+  if (!persona) {
+    return res.status(404).json({ error: 'Persona not found' });
+  }
+  const updated = updateRenderPersona(req.params.id, personaId, persona.name, persona.image_url);
   if (!updated) {
     return res.status(404).json({ error: 'Render not found' });
   }

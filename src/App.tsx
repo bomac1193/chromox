@@ -16,6 +16,7 @@ import {
   previewPerformance,
   rateRenderJob,
   updateRenderLabel,
+  updateRenderPersona,
   fetchFolioClips,
   addToFolio,
   removeFromFolio,
@@ -144,6 +145,13 @@ export default function App() {
     await updateRenderLabel(jobId, label);
     setRenderHistory((prev) =>
       prev.map((job) => (job.id === jobId ? { ...job, label } : job))
+    );
+  }
+
+  async function handleChangeRenderPersona(jobId: string, personaId: string) {
+    const updated = await updateRenderPersona(jobId, personaId);
+    setRenderHistory((prev) =>
+      prev.map((job) => (job.id === jobId ? updated : job))
     );
   }
 
@@ -458,6 +466,7 @@ export default function App() {
               refreshJobs={refreshDownloads}
               onRateJob={handleRateRender}
               onRenameJob={handleRenameRender}
+              onChangePersona={handleChangeRenderPersona}
               onAddToFolio={handleAddToFolio}
             />
           )}

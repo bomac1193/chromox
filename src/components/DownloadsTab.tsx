@@ -21,6 +21,7 @@ type Props = {
   refreshJobs: () => Promise<void> | void;
   onRateJob: (jobId: string, rating: 'like' | 'dislike' | 'neutral') => Promise<void>;
   onRenameJob: (jobId: string, label: string) => Promise<void>;
+  onChangePersona: (jobId: string, personaId: string) => Promise<void>;
   onAddToFolio: (renderId: string, name?: string) => Promise<void>;
 };
 
@@ -32,6 +33,7 @@ export function DownloadsTab({
   refreshJobs,
   onRateJob,
   onRenameJob,
+  onChangePersona,
   onAddToFolio
 }: Props) {
   const [search, setSearch] = useState('');
@@ -47,6 +49,9 @@ export function DownloadsTab({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [editingPersonaId, setEditingPersonaId] = useState<string | null>(null);
+  const [selectedNewPersonaId, setSelectedNewPersonaId] = useState<string | null>(null);
+  const [changingPersonaId, setChangingPersonaId] = useState<string | null>(null);
 
   async function handleRename(jobId: string) {
     // Prevent double submission
@@ -69,6 +74,21 @@ export function DownloadsTab({
       setEditingId(null);
       setEditingLabel('');
       setRenamingId(null);
+    }
+  }
+
+  async function handleChangePersona(jobId: string, personaId: string) {
+    if (changingPersonaId === jobId) return;
+    setChangingPersonaId(jobId);
+    try {
+      await onChangePersona(jobId, personaId);
+      await refreshJobs();
+    } catch (err) {
+      console.error('Failed to change persona:', err);
+    } finally {
+      setEditingPersonaId(null);
+      setSelectedNewPersonaId(null);
+      setChangingPersonaId(null);
     }
   }
 
@@ -330,7 +350,47 @@ export function DownloadsTab({
                   <div key={job.id} className="rounded-2xl border border-border-default bg-surface p-4 flex flex-col">
               {/* Header */}
               <div className="mb-2">
-                <p className="text-[10px] uppercase tracking-wider text-muted">{job.personaName}</p>
+                {editingPersonaId === job.id ? (
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={selectedNewPersonaId || job.personaId}
+                      onChange={(e) => setSelectedNewPersonaId(e.target.value)}
+                      className="rounded border border-accent bg-canvas px-1 py-0.5 text-[10px] uppercase tracking-wider text-primary outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      {personas.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (selectedNewPersonaId && selectedNewPersonaId !== job.personaId) {
+                          handleChangePersona(job.id, selectedNewPersonaId);
+                        } else {
+                          setEditingPersonaId(null);
+                          setSelectedNewPersonaId(null);
+                        }
+                      }}
+                      disabled={changingPersonaId === job.id}
+                      className="rounded bg-accent px-2 py-0.5 text-[9px] font-medium text-canvas hover:bg-accent-hover disabled:opacity-50"
+                    >
+                      {changingPersonaId === job.id ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingPersonaId(null); setSelectedNewPersonaId(null); }}
+                      className="rounded border border-border-default px-2 py-0.5 text-[9px] font-medium text-muted hover:text-primary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <p
+                    className="text-[10px] uppercase tracking-wider text-muted cursor-pointer hover:text-accent transition"
+                    onClick={() => { setEditingPersonaId(job.id); setSelectedNewPersonaId(job.personaId); }}
+                    title="Click to change persona"
+                  >
+                    {job.personaName}
+                  </p>
+                )}
                 {editingId === job.id ? (
                   <input
                     type="text"

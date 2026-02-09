@@ -281,6 +281,11 @@ export async function updateRenderLabel(jobId: string, label: string) {
   return data;
 }
 
+export async function updateRenderPersona(jobId: string, personaId: string) {
+  const { data } = await client.patch<RenderHistoryItem>(`/renders/${jobId}/persona`, { personaId });
+  return data;
+}
+
 export async function fetchTasteProfile(personaId: string) {
   const { data } = await client.get<TasteProfile>(`/personas/${personaId}/taste-profile`);
   return data;
