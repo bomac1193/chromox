@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Persona, RenderHistoryItem, StyleControls, FolioClip } from './types';
+import { useEffect, useState, useMemo } from 'react';
+import { Persona, RenderHistoryItem, StyleControls, FolioClip, GuideSample } from './types';
 import { StudioPanel } from './components/StudioPanel';
 import { CreatePersonaModal } from './components/CreatePersonaModal';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
@@ -41,6 +41,7 @@ export default function App() {
   const [folioOpen, setFolioOpen] = useState(false);
   const [selectedFolioClipId, setSelectedFolioClipId] = useState<string | undefined>(undefined);
   const [bovedaOpen, setBovedaOpen] = useState(false);
+  const [brandName, setBrandName] = useState<'voxa' | 'splurgle'>('voxa');
   function handlePrefillConsumed() {
     setPrefillJob(null);
   }
@@ -138,6 +139,33 @@ export default function App() {
 
   const activePersona = personas.find((p) => p.id === activePersonaId);
   const activePersonaImage = activePersona?.image_url ? `${API_HOST}${activePersona.image_url}` : undefined;
+
+  // Combine folio clips with guide samples from all personas
+  const allClips = useMemo(() => {
+    const guideSamplesAsClips: FolioClip[] = [];
+
+    for (const persona of personas) {
+      if (persona.guide_samples && persona.guide_samples.length > 0) {
+        for (const sample of persona.guide_samples) {
+          // Build URL - may be relative path or full URL
+          const audioUrl = sample.url || sample.path || '';
+          guideSamplesAsClips.push({
+            id: `guide_${persona.id}_${sample.id}`,
+            name: sample.name || sample.originalName,
+            audioPath: sample.path || '',
+            audioUrl: audioUrl,
+            source: 'upload' as const,
+            sourcePersonaName: persona.name,
+            tags: sample.tags || ['guide-sample'],
+            added_at: sample.uploaded_at || new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    // Combine: folio clips first, then guide samples
+    return [...folioClips, ...guideSamplesAsClips];
+  }, [personas, folioClips]);
   const objectPositionStyle = (persona?: Persona) => ({
     objectPosition: `${persona?.image_focus_x ?? 50}% ${persona?.image_focus_y ?? 50}%`
   });
@@ -149,10 +177,17 @@ export default function App() {
       <header className="border-b border-border-default bg-surface">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-6 py-4">
           {/* Left: Title */}
-          <div>
-            <h1 className="font-display text-lg font-semibold tracking-tight">Lōxu</h1>
-            <p className="text-xs text-muted">Burn The Square</p>
-          </div>
+          <h1
+            className="font-display text-lg font-semibold tracking-tight cursor-pointer select-none transition-opacity hover:opacity-70"
+            onClick={() => setBrandName(prev => prev === 'voxa' ? 'splurgle' : 'voxa')}
+            title="Click to switch brand name"
+          >
+            {brandName === 'voxa' ? (
+              <>Vòx<span style={{letterSpacing: '-0.15em'}}>ā</span></>
+            ) : (
+              'Splurgle'
+            )}
+          </h1>
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
@@ -167,9 +202,9 @@ export default function App() {
               className="relative flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10 hover:border-accent/50"
             >
               <BookmarkIcon size={14} /> Folio
-              {folioClips.length > 0 && (
+              {allClips.length > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[10px] font-semibold text-canvas">
-                  {folioClips.length}
+                  {allClips.length}
                 </span>
               )}
             </button>
@@ -289,9 +324,10 @@ export default function App() {
           {activePersona ? (
             <div className="rounded-2xl border border-border-default bg-surface p-6">
               {/* Persona Header */}
-              <div className="mb-6 flex items-start justify-between border-b border-border-default pb-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-accent/15">
+              <div className="mb-6 border-b border-border-default pb-6">
+                <div className="flex flex-col items-center text-center">
+                  {/* Large circular avatar */}
+                  <div className="mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-border-default bg-overlay">
                     {activePersonaImage ? (
                       <img
                         src={activePersonaImage}
@@ -300,29 +336,29 @@ export default function App() {
                         style={objectPositionStyle(activePersona)}
                       />
                     ) : activePersona.is_cloned ? (
-                      <LogoIcon className="text-accent" size={28} />
+                      <LogoIcon className="text-accent" size={40} />
                     ) : (
-                      <MicIcon className="text-secondary" size={28} />
+                      <MicIcon className="text-secondary" size={40} />
                     )}
                   </div>
-                  <div>
-                    <h2 className="font-display text-2xl font-semibold tracking-tight">{activePersona.name}</h2>
-                    <p className="mt-1 text-sm text-secondary">{activePersona.description}</p>
+                  {/* Name and description */}
+                  <h2 className="font-display text-2xl font-semibold tracking-tight">{activePersona.name}</h2>
+                  <p className="mt-1 max-w-md text-sm text-secondary">{activePersona.description}</p>
+                  {/* Tags and actions */}
+                  <div className="mt-4 flex items-center gap-3">
                     {activePersona.is_cloned && (
-                      <div className="mt-2 flex gap-2">
-                        <span className="rounded-lg bg-accent/15 px-2 py-1 text-xs font-medium text-accent">
-                          Voice Clone
-                        </span>
-                      </div>
+                      <span className="border border-border-default px-3 py-1 text-xs font-medium uppercase tracking-wide text-secondary">
+                        Voice Clone
+                      </span>
                     )}
+                    <button
+                      onClick={() => setEditingPersona(activePersona)}
+                      className="border border-border-default px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis hover:text-primary"
+                    >
+                      Edit Persona
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => setEditingPersona(activePersona)}
-                  className="rounded-xl border border-border-default px-4 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis hover:text-primary"
-                >
-                  Edit Persona
-                </button>
               </div>
 
               {/* Studio Panel */}
@@ -401,7 +437,7 @@ export default function App() {
       <FolioDrawer
         open={folioOpen}
         onClose={() => setFolioOpen(false)}
-        clips={folioClips}
+        clips={allClips}
         selectedClipId={selectedFolioClipId}
         onSelectClip={(id) => setSelectedFolioClipId(id)}
         onRemoveClip={handleRemoveFromFolio}
