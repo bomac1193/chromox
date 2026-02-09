@@ -507,16 +507,16 @@ export function StudioPanel({
           </div>
         </div>
 
-        {/* Preset Selector */}
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted">Preset</span>
-          <div className="flex flex-wrap gap-1.5">
+        {/* Preset Selector - Horizontal scroll, no wrap */}
+        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+          <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-muted">Preset</span>
+          <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {studioPresets.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => handleApplyPreset(preset)}
                 title={preset.description}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition ${
                   selectedPresetId === preset.id
                     ? 'bg-accent text-canvas'
                     : 'border border-border-default bg-canvas text-secondary hover:border-accent/40 hover:text-primary'
