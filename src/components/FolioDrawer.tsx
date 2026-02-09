@@ -3,7 +3,7 @@ import { useRef, useState, useMemo, DragEvent } from 'react';
 import { API_HOST } from '../lib/api';
 import { FolioClip } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { BookmarkIcon, TrashIcon, UploadIcon, SearchIcon, FilterIcon, SortIcon } from './Icons';
+import { BookmarkIcon, TrashIcon, UploadIcon } from './Icons';
 
 type SortOption = 'recent' | 'oldest' | 'az' | 'za';
 type SourceFilter = 'all' | 'render' | 'upload' | 'guide';
@@ -113,11 +113,11 @@ export function FolioDrawer({
           break;
         case 'source':
           if (clip.id.startsWith('guide_')) {
-            key = '🎤 Guide Samples';
+            key = 'Guide Samples';
           } else if (clip.source === 'render') {
-            key = '🎬 Renders';
+            key = 'Renders';
           } else {
-            key = '📤 Uploads';
+            key = 'Uploads';
           }
           break;
         case 'date':
@@ -144,7 +144,6 @@ export function FolioDrawer({
     const result: ClipGroup[] = [];
 
     if (groupBy === 'date') {
-      // Order: Today, Yesterday, This Week, This Month, Older
       const dateOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
       for (const label of dateOrder) {
         if (groups.has(label)) {
@@ -152,15 +151,13 @@ export function FolioDrawer({
         }
       }
     } else if (groupBy === 'source') {
-      // Order: Guide Samples, Renders, Uploads
-      const sourceOrder = ['🎤 Guide Samples', '🎬 Renders', '📤 Uploads'];
+      const sourceOrder = ['Guide Samples', 'Renders', 'Uploads'];
       for (const label of sourceOrder) {
         if (groups.has(label)) {
           result.push({ label, clips: groups.get(label)! });
         }
       }
     } else {
-      // Alphabetical for persona
       const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
         if (a === 'Uploaded') return 1;
         if (b === 'Uploaded') return -1;
@@ -228,94 +225,74 @@ export function FolioDrawer({
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
-      <div className="fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-border-default bg-canvas shadow-2xl">
+      <div className="fixed inset-y-0 right-0 flex w-full max-w-3xl flex-col border-l border-border-default bg-canvas p-6 shadow-2xl">
         {/* Header */}
-        <div className="border-b border-border-default px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
-                <BookmarkIcon className="text-accent" size={18} />
-              </div>
-              <div>
-                <Dialog.Title className="font-display text-xl font-semibold">Folio Collection</Dialog.Title>
-                <p className="text-sm text-secondary">
-                  {clips.length} clip{clips.length !== 1 ? 's' : ''} • {guideCount} guides • {renderCount} renders • {uploadCount} uploads
-                </p>
-              </div>
-            </div>
-            <button onClick={onClose} className="text-sm text-muted transition hover:text-primary">
-              Close
-            </button>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <Dialog.Title className="font-display text-2xl font-semibold">Folio Collection</Dialog.Title>
+            <p className="text-sm text-secondary">
+              {clips.length} clip{clips.length !== 1 ? 's' : ''} · {guideCount} guides · {renderCount} renders · {uploadCount} uploads
+            </p>
           </div>
+          <button onClick={onClose} className="text-sm text-muted transition hover:text-primary">
+            Close
+          </button>
         </div>
 
-        {/* Upload section with drag-drop */}
+        {/* Upload zone */}
         <div
-          className={`border-b border-border-default px-6 py-4 transition ${
-            isDragOver ? 'bg-accent/10' : ''
-          }`}
+          className={`mb-4 transition ${isDragOver ? 'opacity-100' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted">
-            Upload to Folio {isDragOver && <span className="text-accent">— Drop file here</span>}
-          </p>
-
-          {/* Drag-drop zone when no file pending */}
-          {!pendingFile && (
+          {!pendingFile ? (
             <div
-              className={`mb-3 flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed p-6 transition ${
+              onClick={() => fileRef.current?.click()}
+              className={`flex cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed p-6 transition ${
                 isDragOver
                   ? 'border-accent bg-accent/5'
                   : 'border-border-default hover:border-border-emphasis hover:bg-surface'
               }`}
-              onClick={() => fileRef.current?.click()}
             >
               <div className="text-center">
-                <UploadIcon size={24} className="mx-auto mb-2 text-muted" />
+                <UploadIcon size={20} className="mx-auto mb-2 text-muted" />
                 <p className="text-sm text-secondary">
-                  Drop audio file here or <span className="text-accent">browse</span>
+                  Drop audio here or <span className="text-accent">browse</span>
                 </p>
-                <p className="mt-1 text-[10px] text-muted">MP3, WAV, M4A, OGG supported</p>
+                <p className="mt-1 text-[11px] text-muted">MP3, WAV, M4A, OGG</p>
               </div>
             </div>
-          )}
-
-          {/* File selected state */}
-          {pendingFile && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="flex flex-1 items-center gap-2 rounded-lg border border-accent/40 bg-accent/5 px-3 py-2">
-                <span className="text-sm text-accent">📎</span>
-                <span className="flex-1 truncate text-sm text-primary">{pendingFile.name}</span>
+          ) : (
+            <div className="rounded-2xl border border-border-default bg-surface p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 truncate text-sm text-primary">{pendingFile.name}</div>
+                <input
+                  className="w-40 rounded-xl border border-border-default bg-canvas px-3 py-2 text-sm text-primary placeholder-disabled focus:border-accent focus:outline-none"
+                  placeholder="Clip name"
+                  value={uploadName}
+                  onChange={(e) => setUploadName(e.target.value)}
+                />
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading}
+                  className="rounded-lg bg-accent px-4 py-2 text-xs font-medium uppercase tracking-wider text-canvas transition hover:bg-accent-hover disabled:opacity-50"
+                >
+                  {uploading ? 'Uploading...' : 'Add'}
+                </button>
                 <button
                   onClick={() => {
                     setPendingFile(null);
                     setUploadName('');
                     if (fileRef.current) fileRef.current.value = '';
                   }}
-                  className="text-xs text-muted hover:text-error"
+                  className="text-sm text-muted hover:text-error"
                 >
                   ✕
                 </button>
               </div>
-              <input
-                className="rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-primary placeholder-disabled focus:border-accent focus:outline-none sm:w-48"
-                placeholder="Clip name"
-                value={uploadName}
-                onChange={(e) => setUploadName(e.target.value)}
-              />
-              <button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-xs font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <UploadIcon size={12} />
-                {uploading ? 'Uploading...' : 'Add to Folio'}
-              </button>
             </div>
           )}
-
           <input
             ref={fileRef}
             type="file"
@@ -331,184 +308,110 @@ export function FolioDrawer({
           />
         </div>
 
-        {/* Search and filters */}
-        <div className="border-b border-border-default px-6 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <SearchIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="text"
-                placeholder="Search clips..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-border-default bg-surface py-2 pl-9 pr-3 text-sm text-primary placeholder-disabled focus:border-accent focus:outline-none"
-              />
-            </div>
-
-            {/* Source filter */}
-            <div className="flex items-center gap-1">
-              <FilterIcon size={12} className="text-muted" />
-              <select
-                value={sourceFilter}
-                onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
-                className="rounded-lg border border-border-default bg-surface px-2 py-1.5 text-xs text-primary focus:border-accent focus:outline-none"
-              >
-                <option value="all">All Sources</option>
-                <option value="guide">Guide Samples ({guideCount})</option>
-                <option value="render">Renders ({renderCount})</option>
-                <option value="upload">Uploads ({uploadCount})</option>
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-1">
-              <SortIcon size={12} className="text-muted" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="rounded-lg border border-border-default bg-surface px-2 py-1.5 text-xs text-primary focus:border-accent focus:outline-none"
-              >
-                <option value="recent">Recent First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="az">A → Z</option>
-                <option value="za">Z → A</option>
-              </select>
-            </div>
-
-            {/* Group By */}
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-muted">Group:</span>
-              <select
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-                className="rounded-lg border border-border-default bg-surface px-2 py-1.5 text-xs text-primary focus:border-accent focus:outline-none"
-              >
-                <option value="persona">By Persona</option>
-                <option value="source">By Source</option>
-                <option value="date">By Date</option>
-                <option value="none">No Grouping</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Active filters indicator */}
-          {(searchQuery || sourceFilter !== 'all') && (
-            <div className="mt-2 flex items-center gap-2 text-[10px] text-muted">
-              <span>Showing {filteredClips.length} of {clips.length} clips</span>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSourceFilter('all');
-                }}
-                className="text-accent hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
+        {/* Filters row */}
+        <div className="mb-4 grid gap-3 md:grid-cols-4">
+          <input
+            className="rounded-xl border border-border-default bg-surface px-3 py-2 text-sm text-primary placeholder-disabled focus:border-accent focus:outline-none"
+            placeholder="Search clips, personas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+            className="rounded-xl border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+          >
+            <option value="all">All Sources</option>
+            <option value="guide">Guides ({guideCount})</option>
+            <option value="render">Renders ({renderCount})</option>
+            <option value="upload">Uploads ({uploadCount})</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="rounded-xl border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+          >
+            <option value="recent">Recent First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+          </select>
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            className="rounded-xl border border-border-default bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+          >
+            <option value="persona">Group by Persona</option>
+            <option value="source">Group by Source</option>
+            <option value="date">Group by Date</option>
+            <option value="none">No Grouping</option>
+          </select>
         </div>
 
+        {/* Active filters */}
+        {(searchQuery || sourceFilter !== 'all') && (
+          <div className="mb-4 flex items-center gap-2 text-[11px] text-muted">
+            <span>Showing {filteredClips.length} of {clips.length} clips</span>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSourceFilter('all');
+              }}
+              className="text-accent hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
         {/* Clip list */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="space-y-6">
-            {groupedClips.map((group, groupIndex) => (
-              <div key={group.label || groupIndex}>
-                {/* Group header */}
-                {group.label && (
-                  <div className="mb-3 flex items-center gap-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-secondary">
-                      {group.label}
-                    </h3>
-                    <span className="rounded-full bg-elevated px-2 py-0.5 text-[10px] text-muted">
-                      {group.clips.length}
-                    </span>
-                    <div className="h-px flex-1 bg-border-default" />
-                  </div>
-                )}
+        <div className="flex-1 space-y-6 overflow-y-auto">
+          {groupedClips.map((group, groupIndex) => (
+            <div key={group.label || groupIndex}>
+              {/* Group header */}
+              {group.label && (
+                <div className="mb-3 flex items-center gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted">{group.label}</p>
+                  <span className="rounded-full bg-elevated px-2 py-0.5 text-[10px] text-secondary">{group.clips.length}</span>
+                  <div className="h-px flex-1 bg-border-default" />
+                </div>
+              )}
 
-                {/* Clips in group */}
-                <div className="space-y-3">
-                  {group.clips.map((clip) => {
-                    const isSelected = selectedClipId === clip.id;
-                    return (
-                      <div
-                        key={clip.id}
-                        className={`rounded-2xl border p-4 transition ${
-                          isSelected
-                            ? 'border-accent bg-accent/5'
-                            : 'border-border-default bg-surface hover:border-border-emphasis'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <BookmarkIcon size={14} className={isSelected ? 'text-accent' : 'text-muted'} />
-                              <p className="truncate text-sm font-medium text-primary">{clip.name}</p>
-                              {isSelected && (
-                                <span className="shrink-0 rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
-                                  Active Guide
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-muted">
-                              <span className={
-                                clip.id.startsWith('guide_')
-                                  ? 'text-purple-400'
-                                  : clip.source === 'render'
-                                    ? 'text-blue-400'
-                                    : 'text-green-400'
-                              }>
-                                {clip.id.startsWith('guide_')
-                                  ? '🎤 Guide'
-                                  : clip.source === 'render'
-                                    ? '🎬 Render'
-                                    : '📤 Upload'}
-                              </span>
-                              {clip.duration && (
-                                <span>• {formatDuration(clip.duration)}</span>
-                              )}
-                              <span>• {new Date(clip.added_at).toLocaleDateString()}</span>
-                            </div>
-                            {clip.tags && clip.tags.length > 0 && !clip.tags.every(t => t === 'guide-sample') && (
-                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                {clip.tags.filter(t => t !== 'guide-sample').map((tag) => (
-                                  <button
-                                    key={tag}
-                                    onClick={() => setSearchQuery(tag)}
-                                    className="rounded-full border border-border-subtle bg-elevated px-2 py-0.5 text-[9px] uppercase tracking-wide text-muted transition hover:border-accent hover:text-accent"
-                                  >
-                                    {tag}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+              {/* Clips */}
+              <div className="space-y-3">
+                {group.clips.map((clip) => {
+                  const isSelected = selectedClipId === clip.id;
+                  const isGuide = clip.id.startsWith('guide_');
+                  return (
+                    <div
+                      key={clip.id}
+                      className={`rounded-2xl border p-4 transition ${
+                        isSelected
+                          ? 'border-accent bg-accent/5'
+                          : 'border-border-default bg-surface'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-xs uppercase tracking-wider text-muted">
+                            {clip.sourcePersonaName || (isGuide ? 'Guide' : clip.source === 'render' ? 'Render' : 'Upload')}
+                          </p>
+                          <h3 className="font-display text-lg font-medium">{clip.name}</h3>
+                          <p className="text-xs text-muted">{new Date(clip.added_at).toLocaleString()}</p>
                         </div>
-
-                        <div className="mt-3">
-                          <AudioPlayer
-                            src={clip.audioUrl.startsWith('http') ? clip.audioUrl : `${API_HOST}${clip.audioUrl}`}
-                            label={clip.name}
-                          />
-                        </div>
-
-                        <div className="mt-3 flex items-center gap-2">
+                        <div className="flex gap-2">
                           <button
-                            type="button"
                             onClick={() => handleUseAndClose(clip.id)}
-                            className={`rounded-lg px-4 py-2 text-xs font-medium uppercase tracking-wide transition ${
+                            className={`rounded-lg px-4 py-2 text-xs font-medium uppercase tracking-wider transition ${
                               isSelected
                                 ? 'bg-accent text-canvas'
-                                : 'border border-accent/40 text-accent hover:border-accent hover:bg-accent/5'
+                                : 'border border-border-default bg-surface text-secondary hover:bg-overlay hover:border-border-emphasis'
                             }`}
                           >
-                            {isSelected ? 'Currently Selected' : 'Use as Guide'}
+                            {isSelected ? 'Selected' : 'Use as Guide'}
                           </button>
-                          {/* Only show remove for folio clips, not guide samples */}
-                          {!clip.id.startsWith('guide_') && (
+                          {!isGuide && (
                             <button
-                              type="button"
                               onClick={async () => {
                                 setRemovingId(clip.id);
                                 try {
@@ -518,49 +421,67 @@ export function FolioDrawer({
                                 }
                               }}
                               disabled={removingId === clip.id}
-                              className="flex items-center gap-1 rounded-lg border border-border-default px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted transition hover:border-error/40 hover:text-error disabled:opacity-40"
+                              className="rounded-lg border border-border-default px-4 py-2 text-xs font-medium uppercase tracking-wider text-secondary transition hover:border-error/40 hover:text-error disabled:opacity-50"
                             >
                               <TrashIcon size={12} />
-                              {removingId === clip.id ? 'Removing...' : 'Remove'}
                             </button>
                           )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
 
-            {filteredClips.length === 0 && clips.length > 0 && (
-              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border-default bg-surface p-12 text-center">
-                <SearchIcon className="mb-3 text-muted" size={32} />
-                <p className="text-sm font-medium text-secondary">No matching clips</p>
-                <p className="mt-1 text-xs text-muted">
-                  Try adjusting your search or filters
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSourceFilter('all');
-                  }}
-                  className="mt-3 text-xs text-accent hover:underline"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            )}
+                      {/* Tags */}
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-muted">
+                        <span className="rounded-full border border-border-subtle bg-elevated px-3 py-1">
+                          Type: <span className="text-secondary">{isGuide ? 'Guide Sample' : clip.source === 'render' ? 'Render' : 'Upload'}</span>
+                        </span>
+                        {clip.duration && (
+                          <span className="rounded-full border border-border-subtle bg-elevated px-3 py-1">
+                            Duration: <span className="text-secondary">{formatDuration(clip.duration)}</span>
+                          </span>
+                        )}
+                        {clip.tags && clip.tags.filter(t => t !== 'guide-sample').length > 0 && (
+                          clip.tags.filter(t => t !== 'guide-sample').map((tag) => (
+                            <span
+                              key={tag}
+                              onClick={() => setSearchQuery(tag)}
+                              className="cursor-pointer rounded-full border border-border-subtle bg-elevated px-3 py-1 transition hover:border-accent hover:text-accent"
+                            >
+                              {tag}
+                            </span>
+                          ))
+                        )}
+                      </div>
 
-            {clips.length === 0 && (
-              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border-default bg-surface p-12 text-center">
-                <BookmarkIcon className="mb-3 text-muted" size={32} />
-                <p className="text-sm font-medium text-secondary">Your folio is empty</p>
-                <p className="mt-1 text-xs text-muted">
-                  Drag & drop audio files above, or save renders from the Download Library
-                </p>
+                      {/* Audio player */}
+                      <div className="mt-3">
+                        <AudioPlayer
+                          src={clip.audioUrl.startsWith('http') ? clip.audioUrl : `${API_HOST}${clip.audioUrl}`}
+                          label={clip.name}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
+            </div>
+          ))}
+
+          {filteredClips.length === 0 && clips.length > 0 && (
+            <div className="rounded-2xl border border-border-default bg-surface p-6 text-center text-secondary">
+              No clips match your filters.{' '}
+              <button onClick={() => { setSearchQuery(''); setSourceFilter('all'); }} className="text-accent hover:underline">
+                Clear filters
+              </button>
+            </div>
+          )}
+
+          {clips.length === 0 && (
+            <div className="rounded-2xl border border-border-default bg-surface p-6 text-center text-secondary">
+              <BookmarkIcon size={24} className="mx-auto mb-2 text-muted" />
+              <p>Your folio is empty.</p>
+              <p className="mt-1 text-xs text-muted">Drop audio files above or save renders from the Download Library.</p>
+            </div>
+          )}
         </div>
       </div>
     </Dialog>
