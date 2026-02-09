@@ -1,11 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { EffectSettings, Persona, RenderHistoryItem, StyleControls, GuideSuggestion, TasteProfile, FolioClip } from '../types';
 import { StyleGrid } from './StyleGrid';
 import { GuideDropzone } from './GuideDropzone';
 import { Meter } from './Meter';
 import { AudioPlayer } from './AudioPlayer';
 import { uploadGuideSample, fetchGuideSuggestions, mintGuideClip, fetchTasteProfile, API_HOST, sendSonicSignal } from '../lib/api';
-import { ThumbUpIcon, ThumbDownIcon, ChevronDownIcon, BookmarkIcon } from './Icons';
+import { ThumbUpIcon, ThumbDownIcon, ChevronDownIcon, BookmarkIcon, SparklesIcon } from './Icons';
+import { studioPresets, parseStylePrompt, applyPreset, StudioPreset } from '../lib/studioPresets';
+
+type StudioMode = 'simple' | 'advanced';
+
+interface ABSlot {
+  url: string;
+  controls: StyleControls;
+  effects: EffectSettings;
+  stylePrompt: string;
+  render?: RenderHistoryItem;
+}
 
 const defaultControls: StyleControls = {
   brightness: 0.5,
@@ -159,6 +170,18 @@ export function StudioPanel({
   const [effectsOpen, setEffectsOpen] = useState(false);
   const [savingToFolio, setSavingToFolio] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+
+  // Simple/Advanced mode and presets
+  const [studioMode, setStudioMode] = useState<StudioMode>('simple');
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [autoConfiguring, setAutoConfiguring] = useState(false);
+
+  // A/B Comparison
+  const [abSlotA, setAbSlotA] = useState<ABSlot | null>(null);
+  const [abSlotB, setAbSlotB] = useState<ABSlot | null>(null);
+  const [activeAbSlot, setActiveAbSlot] = useState<'A' | 'B'>('A');
+  const [abMode, setAbMode] = useState(false);
+
   const customMintSuggestion: GuideSuggestion = {
     id: `custom-${customMintMode}`,
     title: 'Custom Mint',
@@ -214,6 +237,92 @@ export function StudioPanel({
     setLyrics(result);
   }
 
+  // Apply a preset to current settings
+  function handleApplyPreset(preset: StudioPreset) {
+    const { controls: newControls, effects: newEffects } = applyPreset(preset, controls, effects);
+    setControls(newControls);
+    setEffects(newEffects);
+    setSelectedPresetId(preset.id);
+    if (preset.stylePromptSuggestion && !stylePrompt.trim()) {
+      setStylePrompt(preset.stylePromptSuggestion);
+    }
+  }
+
+  // Auto-configure controls based on style prompt keywords
+  function handleAutoConfig() {
+    if (!stylePrompt.trim()) return;
+    setAutoConfiguring(true);
+    const adjustments = parseStylePrompt(stylePrompt);
+    if (Object.keys(adjustments.controls).length > 0) {
+      setControls(prev => ({ ...prev, ...adjustments.controls }));
+    }
+    if (Object.keys(adjustments.effects).length > 0) {
+      setEffects(prev => ({ ...prev, ...adjustments.effects }));
+    }
+    setSelectedPresetId(null); // Clear preset since we're custom now
+    setTimeout(() => setAutoConfiguring(false), 500);
+  }
+
+  // A/B Comparison handlers
+  function handleRenderToSlot(slot: 'A' | 'B') {
+    return async () => {
+      if (!activePersonaId) return;
+      setBusy(true);
+      try {
+        const result = await onRender({
+          personaId: activePersonaId,
+          lyrics,
+          controls,
+          stylePrompt,
+          effects,
+          label,
+          accent: accent === 'auto' ? undefined : accent,
+          accentLocked,
+          guideSampleId: selectedGuideSampleId,
+          guideMatchIntensity,
+          guideUseLyrics,
+          guideTempo,
+          guide,
+          folioClipId: selectedFolioClipId
+        });
+        const abSlot: ABSlot = {
+          url: result.audioUrl,
+          controls: { ...controls },
+          effects: { ...effects },
+          stylePrompt,
+          render: result.render
+        };
+        if (slot === 'A') {
+          setAbSlotA(abSlot);
+        } else {
+          setAbSlotB(abSlot);
+        }
+        setActiveAbSlot(slot);
+        onRenderComplete(result.render);
+        setLatestRender(result.render);
+      } finally {
+        setBusy(false);
+      }
+    };
+  }
+
+  function handlePickWinner(slot: 'A' | 'B') {
+    const winner = slot === 'A' ? abSlotA : abSlotB;
+    if (winner?.render) {
+      onRateRender(winner.render.id, 'like');
+    }
+    // Load winner settings
+    if (winner) {
+      setControls(winner.controls);
+      setEffects(winner.effects);
+      setStylePrompt(winner.stylePrompt);
+      setOutputUrl(winner.url);
+    }
+    setAbMode(false);
+    setAbSlotA(null);
+    setAbSlotB(null);
+  }
+
   async function handleRender() {
     if (!activePersonaId) return;
     setBusy(true);
@@ -231,9 +340,6 @@ export function StudioPanel({
         guideMatchIntensity,
         guideUseLyrics,
         guideTempo,
-        guideStartTime: guideDurationPreset !== 'full' ? guideStartTime : undefined,
-        guideEndTime: guideDurationPreset !== 'full' ? guideEndTime : undefined,
-        guideAccentBlend,
         guide,
         folioClipId: selectedFolioClipId
       });
@@ -266,9 +372,6 @@ export function StudioPanel({
         guideMatchIntensity,
         guideUseLyrics,
         guideTempo,
-        guideStartTime: guideDurationPreset !== 'full' ? guideStartTime : undefined,
-        guideEndTime: guideDurationPreset !== 'full' ? guideEndTime : undefined,
-        guideAccentBlend,
         guide,
         previewSeconds: 12,
         folioClipId: selectedFolioClipId
@@ -375,6 +478,70 @@ export function StudioPanel({
 
   return (
     <div className="space-y-6">
+      {/* Mode Toggle & Preset Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border-default bg-surface p-4">
+        {/* Mode Toggle */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted">Mode</span>
+          <div className="flex rounded-lg border border-border-default bg-canvas p-0.5">
+            <button
+              onClick={() => setStudioMode('simple')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                studioMode === 'simple'
+                  ? 'bg-accent text-canvas'
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              Simple
+            </button>
+            <button
+              onClick={() => setStudioMode('advanced')}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                studioMode === 'advanced'
+                  ? 'bg-accent text-canvas'
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              Advanced
+            </button>
+          </div>
+        </div>
+
+        {/* Preset Selector */}
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted">Preset</span>
+          <div className="flex flex-wrap gap-1.5">
+            {studioPresets.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handleApplyPreset(preset)}
+                title={preset.description}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  selectedPresetId === preset.id
+                    ? 'bg-accent text-canvas'
+                    : 'border border-border-default bg-canvas text-secondary hover:border-accent/40 hover:text-primary'
+                }`}
+              >
+                <span className="mr-1">{preset.emoji}</span>
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* A/B Mode Toggle */}
+        <button
+          onClick={() => setAbMode(!abMode)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            abMode
+              ? 'bg-purple-500/20 border border-purple-500/40 text-purple-400'
+              : 'border border-border-default text-secondary hover:border-border-emphasis'
+          }`}
+        >
+          A/B Compare
+        </button>
+      </div>
+
       {/* Lyrics & Style Section */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left: Lyrics & Prompt */}
@@ -384,31 +551,51 @@ export function StudioPanel({
               Lyrics
             </label>
             <textarea
-              className="h-48 w-full resize-none rounded-xl border border-border-default bg-surface px-4 py-3 text-sm leading-relaxed text-primary placeholder-disabled focus:border-accent focus:outline-none"
+              className={`w-full resize-none rounded-xl border border-border-default bg-surface px-4 py-3 text-sm leading-relaxed text-primary placeholder-disabled focus:border-accent focus:outline-none ${
+                studioMode === 'simple' ? 'h-32' : 'h-48'
+              }`}
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
               placeholder="Enter your lyrics..."
             />
-            <button
-              onClick={handleRewrite}
-              className="mt-3 rounded-lg border border-border-default bg-surface px-4 py-2 text-xs font-medium uppercase tracking-wider text-secondary transition hover:bg-overlay hover:border-border-emphasis"
-            >
-              Rewrite with AI
-            </button>
+            {studioMode === 'advanced' && (
+              <button
+                onClick={handleRewrite}
+                className="mt-3 rounded-lg border border-border-default bg-surface px-4 py-2 text-xs font-medium uppercase tracking-wider text-secondary transition hover:bg-overlay hover:border-border-emphasis"
+              >
+                Rewrite with AI
+              </button>
+            )}
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">
-              Style Prompt
-            </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium uppercase tracking-wide text-muted">
+                Style Prompt
+              </label>
+              <button
+                onClick={handleAutoConfig}
+                disabled={!stylePrompt.trim() || autoConfiguring}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-accent transition hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Auto-configure controls based on style keywords"
+              >
+                <SparklesIcon size={12} />
+                {autoConfiguring ? 'Configuring...' : 'Auto-Config'}
+              </button>
+            </div>
             <input
               className="w-full rounded-xl border border-border-default bg-surface px-4 py-3 text-sm text-primary placeholder-disabled focus:border-accent focus:outline-none"
               value={stylePrompt}
               onChange={(e) => setStylePrompt(e.target.value)}
               placeholder="e.g., ethereal, dreamy, powerful..."
             />
+            <p className="mt-1 text-[10px] text-muted">
+              Try keywords like: breathy, aggressive, glitchy, warm, bright, dreamy, vintage, 8d
+            </p>
           </div>
 
+          {studioMode === 'advanced' && (
+          <>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">
@@ -894,9 +1081,12 @@ export function StudioPanel({
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
 
-        {/* Right: Style Controls */}
+        {/* Right: Style Controls - Advanced Mode Only */}
+        {studioMode === 'advanced' && (
         <div className="space-y-4">
           <div className="rounded-xl border border-border-default bg-surface">
             <button
@@ -1055,36 +1245,86 @@ export function StudioPanel({
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Render Section */}
       <div className="rounded-3xl border border-border-default bg-surface p-6">
-        <div className="grid gap-4 lg:grid-cols-3">
-          <button
-            onClick={handlePreview}
-            disabled={!activePersonaId || previewBusy}
-            className="rounded-2xl border border-border-default bg-elevated px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:bg-overlay hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {previewBusy ? 'Previewing...' : 'Preview 12s'}
-          </button>
-          <button
-            onClick={handleRender}
-            disabled={!activePersonaId || busy}
-            className="rounded-2xl bg-accent px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {busy ? 'Rendering...' : 'Render Vocal'}
-          </button>
-          <div className="rounded-2xl border border-border-default bg-elevated px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wide text-muted">Status</p>
-            <p className="text-sm text-secondary">
-              {busy
-                ? 'Printing chromatic mix...'
-                : previewBusy
-                  ? 'Sketching preview layers...'
-                  : 'Idle · ready for playback'}
-            </p>
+        {/* Simple Mode: Single big render button */}
+        {studioMode === 'simple' && !abMode && (
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={handleRender}
+              disabled={!activePersonaId || busy}
+              className="w-full max-w-md rounded-2xl bg-accent px-6 py-4 text-sm font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {busy ? 'Rendering...' : 'Generate Vocal'}
+            </button>
+            {busy && (
+              <div className="w-full max-w-md">
+                <Meter active={busy} />
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* Advanced Mode or A/B Mode: Full controls */}
+        {(studioMode === 'advanced' || abMode) && (
+        <>
+        {/* A/B Mode Render Buttons */}
+        {abMode ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <button
+              onClick={handleRenderToSlot('A')}
+              disabled={!activePersonaId || busy}
+              className={`rounded-2xl px-4 py-3 text-[11px] font-medium uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                activeAbSlot === 'A' && abSlotA
+                  ? 'bg-purple-500 text-white'
+                  : 'border border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'
+              }`}
+            >
+              {busy && activeAbSlot === 'A' ? 'Rendering A...' : abSlotA ? 'Re-render A' : 'Render to A'}
+            </button>
+            <button
+              onClick={handleRenderToSlot('B')}
+              disabled={!activePersonaId || busy}
+              className={`rounded-2xl px-4 py-3 text-[11px] font-medium uppercase tracking-wide transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                activeAbSlot === 'B' && abSlotB
+                  ? 'bg-purple-500 text-white'
+                  : 'border border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'
+              }`}
+            >
+              {busy && activeAbSlot === 'B' ? 'Rendering B...' : abSlotB ? 'Re-render B' : 'Render to B'}
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <button
+              onClick={handlePreview}
+              disabled={!activePersonaId || previewBusy}
+              className="rounded-2xl border border-border-default bg-elevated px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-secondary transition hover:bg-overlay hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {previewBusy ? 'Previewing...' : 'Preview 12s'}
+            </button>
+            <button
+              onClick={handleRender}
+              disabled={!activePersonaId || busy}
+              className="rounded-2xl bg-accent px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-canvas transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {busy ? 'Rendering...' : 'Render Vocal'}
+            </button>
+            <div className="rounded-2xl border border-border-default bg-elevated px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted">Status</p>
+              <p className="text-sm text-secondary">
+                {busy
+                  ? 'Printing chromatic mix...'
+                  : previewBusy
+                    ? 'Sketching preview layers...'
+                    : 'Idle · ready for playback'}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 rounded-2xl border border-border-default bg-canvas p-4">
           <Meter active={busy || previewBusy} />
@@ -1095,16 +1335,75 @@ export function StudioPanel({
             <span className="text-right">{effects.engine}</span>
           </div>
         </div>
+        </>
+        )}
 
-        {(previewUrl || outputUrl) && (
+        {/* A/B Comparison Output */}
+        {abMode && (abSlotA || abSlotB) && (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* Slot A */}
+              <div className={`rounded-2xl border-2 p-4 transition ${
+                activeAbSlot === 'A' ? 'border-purple-500 bg-purple-500/5' : 'border-border-default bg-canvas'
+              }`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-purple-400">Version A</span>
+                  {abSlotA && <span className="text-[10px] text-muted">{abSlotA.stylePrompt}</span>}
+                </div>
+                {abSlotA ? (
+                  <AudioPlayer src={abSlotA.url} label="Version A" />
+                ) : (
+                  <p className="py-4 text-center text-sm text-muted">Not rendered yet</p>
+                )}
+              </div>
+
+              {/* Slot B */}
+              <div className={`rounded-2xl border-2 p-4 transition ${
+                activeAbSlot === 'B' ? 'border-purple-500 bg-purple-500/5' : 'border-border-default bg-canvas'
+              }`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-purple-400">Version B</span>
+                  {abSlotB && <span className="text-[10px] text-muted">{abSlotB.stylePrompt}</span>}
+                </div>
+                {abSlotB ? (
+                  <AudioPlayer src={abSlotB.url} label="Version B" />
+                ) : (
+                  <p className="py-4 text-center text-sm text-muted">Not rendered yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Pick Winner */}
+            {abSlotA && abSlotB && (
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-xs text-muted uppercase tracking-wide">Pick winner:</span>
+                <button
+                  onClick={() => handlePickWinner('A')}
+                  className="rounded-lg bg-purple-500/20 px-4 py-2 text-sm font-medium text-purple-400 transition hover:bg-purple-500/30"
+                >
+                  A Wins
+                </button>
+                <button
+                  onClick={() => handlePickWinner('B')}
+                  className="rounded-lg bg-purple-500/20 px-4 py-2 text-sm font-medium text-purple-400 transition hover:bg-purple-500/30"
+                >
+                  B Wins
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Normal Output (non-A/B mode) */}
+        {!abMode && (previewUrl || outputUrl) && (
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {previewUrl && (
+            {previewUrl && studioMode === 'advanced' && (
               <div className="rounded-2xl border border-border-default bg-canvas p-3">
                 <AudioPlayer src={previewUrl} label="Preview" />
               </div>
             )}
             {outputUrl && (
-              <div className="rounded-2xl border border-border-default bg-canvas p-3">
+              <div className={`rounded-2xl border border-border-default bg-canvas p-3 ${studioMode === 'simple' ? 'lg:col-span-2' : ''}`}>
                 <AudioPlayer src={outputUrl} label="Render" />
                 {latestRender && (
                   <div className="mt-3 flex flex-col gap-2 text-[11px] uppercase tracking-wide text-muted">
