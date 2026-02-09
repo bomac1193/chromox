@@ -522,7 +522,6 @@ export function StudioPanel({
                     : 'border border-border-default bg-canvas text-secondary hover:border-accent/40 hover:text-primary'
                 }`}
               >
-                <span className="mr-1">{preset.emoji}</span>
                 {preset.name}
               </button>
             ))}

@@ -4,72 +4,43 @@ export interface StudioPreset {
   id: string;
   name: string;
   description: string;
-  emoji: string;
   controls: Partial<StyleControls>;
   effects: Partial<EffectSettings>;
   stylePromptSuggestion?: string;
 }
 
+// Arranged from neutral → warm → airy → analog → intense → big → experimental
 export const studioPresets: StudioPreset[] = [
   {
-    id: 'ethereal',
-    name: 'Ethereal',
-    description: 'Dreamy, floating, atmospheric',
-    emoji: '\u2728',
+    id: 'clean',
+    name: 'Clean',
+    description: 'Neutral, balanced starting point',
     controls: {
-      brightness: 0.7,
-      breathiness: 0.65,
-      energy: 0.35,
-      formant: 0.1,
-      vibratoDepth: 0.5,
-      vibratoRate: 0.3,
-      roboticism: 0.05,
-      glitch: 0.02,
-      stereoWidth: 0.85
+      brightness: 0.5,
+      breathiness: 0.4,
+      energy: 0.5,
+      formant: 0,
+      vibratoDepth: 0.4,
+      vibratoRate: 0.4,
+      roboticism: 0,
+      glitch: 0,
+      stereoWidth: 0.5
     },
     effects: {
-      preset: 'lush',
-      clarity: 0.6,
-      air: 0.75,
-      drive: 0.05,
-      width: 0.8,
-      space: 'hall',
-      dynamics: 0.4
+      preset: 'clean',
+      clarity: 0.7,
+      air: 0.4,
+      drive: 0.1,
+      width: 0.5,
+      space: 'studio',
+      dynamics: 0.6
     },
-    stylePromptSuggestion: 'ethereal whisper, floating dream'
-  },
-  {
-    id: 'aggressive',
-    name: 'Aggressive',
-    description: 'Punchy, intense, in-your-face',
-    emoji: '\u{1F525}',
-    controls: {
-      brightness: 0.65,
-      breathiness: 0.2,
-      energy: 0.9,
-      formant: -0.1,
-      vibratoDepth: 0.2,
-      vibratoRate: 0.6,
-      roboticism: 0.15,
-      glitch: 0.25,
-      stereoWidth: 0.6
-    },
-    effects: {
-      preset: 'club',
-      clarity: 0.85,
-      air: 0.25,
-      drive: 0.45,
-      width: 0.65,
-      space: 'dry',
-      dynamics: 0.85
-    },
-    stylePromptSuggestion: 'aggressive bite, raw power'
+    stylePromptSuggestion: 'clear, natural voice'
   },
   {
     id: 'intimate',
     name: 'Intimate',
     description: 'Close, warm, personal',
-    emoji: '\u{1F49C}',
     controls: {
       brightness: 0.45,
       breathiness: 0.55,
@@ -93,40 +64,35 @@ export const studioPresets: StudioPreset[] = [
     stylePromptSuggestion: 'intimate whisper, close warmth'
   },
   {
-    id: 'cyberpunk',
-    name: 'Cyberpunk',
-    description: 'Glitchy, robotic, futuristic',
-    emoji: '\u{1F916}',
+    id: 'ethereal',
+    name: 'Ethereal',
+    description: 'Dreamy, floating, atmospheric',
     controls: {
-      brightness: 0.6,
-      breathiness: 0.25,
-      energy: 0.7,
-      formant: -0.15,
-      vibratoDepth: 0.15,
-      vibratoRate: 0.7,
-      roboticism: 0.45,
-      glitch: 0.5,
-      stereoWidth: 0.9
+      brightness: 0.7,
+      breathiness: 0.65,
+      energy: 0.35,
+      formant: 0.1,
+      vibratoDepth: 0.5,
+      vibratoRate: 0.3,
+      roboticism: 0.05,
+      glitch: 0.02,
+      stereoWidth: 0.85
     },
     effects: {
-      preset: 'pitch-warp',
-      engine: 'rave-ddsp-8d',
-      clarity: 0.7,
-      air: 0.35,
-      drive: 0.3,
-      width: 0.95,
-      space: 'arena',
-      dynamics: 0.7,
-      orbitSpeed: 0.7,
-      orbitDepth: 0.8
+      preset: 'lush',
+      clarity: 0.6,
+      air: 0.75,
+      drive: 0.05,
+      width: 0.8,
+      space: 'hall',
+      dynamics: 0.4
     },
-    stylePromptSuggestion: 'cyberpunk glitch, neon static'
+    stylePromptSuggestion: 'ethereal whisper, floating dream'
   },
   {
     id: 'vintage',
     name: 'Vintage',
     description: 'Warm, analog, nostalgic',
-    emoji: '\u{1F4FC}',
     controls: {
       brightness: 0.4,
       breathiness: 0.35,
@@ -150,10 +116,35 @@ export const studioPresets: StudioPreset[] = [
     stylePromptSuggestion: 'vintage warmth, analog soul'
   },
   {
+    id: 'aggressive',
+    name: 'Aggressive',
+    description: 'Punchy, intense, driving',
+    controls: {
+      brightness: 0.65,
+      breathiness: 0.2,
+      energy: 0.9,
+      formant: -0.1,
+      vibratoDepth: 0.2,
+      vibratoRate: 0.6,
+      roboticism: 0.15,
+      glitch: 0.1,
+      stereoWidth: 0.6
+    },
+    effects: {
+      preset: 'club',
+      clarity: 0.85,
+      air: 0.25,
+      drive: 0.45,
+      width: 0.65,
+      space: 'dry',
+      dynamics: 0.85
+    },
+    stylePromptSuggestion: 'aggressive bite, raw power'
+  },
+  {
     id: 'anthemic',
     name: 'Anthemic',
-    description: 'Big, powerful, stadium-ready',
-    emoji: '\u{1F3C6}',
+    description: 'Big, powerful, expansive',
     controls: {
       brightness: 0.6,
       breathiness: 0.3,
@@ -177,10 +168,38 @@ export const studioPresets: StudioPreset[] = [
     stylePromptSuggestion: 'anthemic rise, stadium power'
   },
   {
+    id: 'glitch',
+    name: 'Glitch',
+    description: 'Robotic, textured, experimental',
+    controls: {
+      brightness: 0.6,
+      breathiness: 0.25,
+      energy: 0.7,
+      formant: -0.15,
+      vibratoDepth: 0.15,
+      vibratoRate: 0.7,
+      roboticism: 0.45,
+      glitch: 0.5,
+      stereoWidth: 0.9
+    },
+    effects: {
+      preset: 'pitch-warp',
+      engine: 'rave-ddsp-8d',
+      clarity: 0.7,
+      air: 0.35,
+      drive: 0.3,
+      width: 0.95,
+      space: 'arena',
+      dynamics: 0.7,
+      orbitSpeed: 0.7,
+      orbitDepth: 0.8
+    },
+    stylePromptSuggestion: 'glitch texture, digital artifact'
+  },
+  {
     id: 'hyperpop',
     name: 'Hyperpop',
     description: 'Extreme, pitched, chaotic',
-    emoji: '\u{1F308}',
     controls: {
       brightness: 0.85,
       breathiness: 0.2,
@@ -205,33 +224,6 @@ export const studioPresets: StudioPreset[] = [
       orbitDepth: 0.9
     },
     stylePromptSuggestion: 'hyperpop sugar rush, pitched chaos'
-  },
-  {
-    id: 'rnb',
-    name: 'R&B Smooth',
-    description: 'Silky, soulful, groovy',
-    emoji: '\u{1F3B5}',
-    controls: {
-      brightness: 0.5,
-      breathiness: 0.45,
-      energy: 0.55,
-      formant: 0,
-      vibratoDepth: 0.5,
-      vibratoRate: 0.45,
-      roboticism: 0,
-      glitch: 0,
-      stereoWidth: 0.6
-    },
-    effects: {
-      preset: 'lush',
-      clarity: 0.7,
-      air: 0.55,
-      drive: 0.12,
-      width: 0.6,
-      space: 'studio',
-      dynamics: 0.6
-    },
-    stylePromptSuggestion: 'silky R&B, velvet groove'
   }
 ];
 
