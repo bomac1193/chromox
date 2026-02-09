@@ -168,6 +168,33 @@ export const studioPresets: StudioPreset[] = [
     stylePromptSuggestion: 'anthemic rise, stadium power'
   },
   {
+    id: 'coffee',
+    name: 'Coffee',
+    description: 'Podcast studio, warm clarity',
+    controls: {
+      brightness: 0.5,
+      breathiness: 0.3,
+      energy: 0.45,
+      formant: 0,
+      vibratoDepth: 0.15,
+      vibratoRate: 0.3,
+      roboticism: 0,
+      glitch: 0,
+      stereoWidth: 0.3
+    },
+    effects: {
+      preset: 'clean',
+      clarity: 0.85,
+      air: 0.35,
+      drive: 0.05,
+      width: 0.25,
+      space: 'dry',
+      dynamics: 0.7,
+      noiseReduction: 0.6
+    },
+    stylePromptSuggestion: 'warm podcast voice, clear and present'
+  },
+  {
     id: 'glitch',
     name: 'Glitch',
     description: 'Robotic, textured, experimental',
@@ -196,35 +223,6 @@ export const studioPresets: StudioPreset[] = [
     },
     stylePromptSuggestion: 'glitch texture, digital artifact'
   },
-  {
-    id: 'hyperpop',
-    name: 'Hyperpop',
-    description: 'Extreme, pitched, chaotic',
-    controls: {
-      brightness: 0.85,
-      breathiness: 0.2,
-      energy: 0.95,
-      formant: 0.25,
-      vibratoDepth: 0.2,
-      vibratoRate: 0.8,
-      roboticism: 0.35,
-      glitch: 0.4,
-      stereoWidth: 1
-    },
-    effects: {
-      preset: 'shimmer-stack',
-      engine: 'rave-ddsp-8d',
-      clarity: 0.9,
-      air: 0.5,
-      drive: 0.4,
-      width: 1,
-      space: 'arena',
-      dynamics: 0.9,
-      orbitSpeed: 0.9,
-      orbitDepth: 0.9
-    },
-    stylePromptSuggestion: 'hyperpop sugar rush, pitched chaos'
-  }
 ];
 
 // Keywords that map to control adjustments
