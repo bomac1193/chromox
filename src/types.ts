@@ -74,6 +74,24 @@ export type VoiceProfile = {
   analysisTimestamp: string;
 };
 
+export type LicensingTerms = {
+  training_rights: boolean;
+  derivative_rights: boolean;
+  commercial_rights: boolean;
+  attribution_required: boolean;
+  revenue_split: number;
+  rate_per_second_cents?: number;
+};
+
+export type CloneDetection = {
+  voiceType?: 'speech' | 'singing' | 'mixed';
+  accent?: string;
+  accentLabel?: string;
+  quality?: 'studio' | 'good' | 'acceptable' | 'poor';
+  duration?: number;
+  providerSettings?: Record<string, unknown>;
+};
+
 export type Persona = {
   id: string;
   name: string;
@@ -88,8 +106,14 @@ export type Persona = {
   is_cloned?: boolean;
   voice_profile?: VoiceProfile;
   clone_source?: 'upload' | 'recording' | 'external';
+  clone_mode?: 'quick' | 'studio' | 'diaspora';
+  clone_detection?: CloneDetection;
   guide_samples?: GuideSample[];
   relics?: Relic[];
+  // o8 Provenance fields
+  o8_identity_id?: string;
+  voice_fingerprint?: string;
+  licensing_terms?: LicensingTerms;
 };
 
 export type GuideSuggestion = {
