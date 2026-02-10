@@ -1,5 +1,7 @@
 import crypto from 'crypto';
-import { embedAudioWithClap, embedTextWithOpenAI, transcribeGuideWithWhisper, transcribeGuideWithAccentSupport, type AccentMetadataAssembly } from './audioAnalysis';
+import { embedAudioWithClap, embedTextWithOpenAI, transcribeGuideWithWhisper, transcribeGuideWithAccentSupport, type AccentMetadataAssembly } from './audioAnalysis.js';
+import { detectBPM } from './beatDetection.js';
+import type { BeatGrid } from '../types.js';
 
 const moods: Array<'hype' | 'dream' | 'anthem' | 'ambient'> = ['hype', 'dream', 'anthem', 'ambient'];
 
@@ -104,6 +106,24 @@ export async function generateGuideMetadata(input: {
     intonation: 'rising' | 'falling' | 'flat' | 'melodic';
     tempo: 'fast' | 'moderate' | 'slow';
   } | undefined;
+  let beatGrid: BeatGrid | undefined;
+  let realTempo: number | undefined;
+
+  // Detect BPM and beat grid
+  try {
+    const beatAnalysis = await detectBPM(input.path);
+    beatGrid = {
+      bpm: beatAnalysis.bpm,
+      confidence: beatAnalysis.confidence,
+      beats: beatAnalysis.beats,
+      downbeats: beatAnalysis.downbeats,
+      duration: beatAnalysis.duration
+    };
+    realTempo = beatAnalysis.bpm;
+    console.log(`[GuideMetadata] 🥁 BPM detected: ${beatAnalysis.bpm} (confidence: ${beatAnalysis.confidence.toFixed(2)})`);
+  } catch (error) {
+    console.warn('[GuideMetadata] Beat detection failed, using heuristic tempo:', (error as Error).message);
+  }
 
   // Use enhanced transcription with accent detection (AssemblyAI → Rev.ai → Whisper fallback chain)
   try {
@@ -152,6 +172,7 @@ export async function generateGuideMetadata(input: {
   return {
     ...heuristics,
     transcript,
+    tempo: realTempo ?? heuristics.tempo,  // Use real BPM if available
     embedding: embedding ?? heuristics.embedding,
     accentMetadata,
     transcriptionConfidence,
@@ -159,6 +180,7 @@ export async function generateGuideMetadata(input: {
     phoneticTranscript,
     pronunciationHints,
     prosodyHints,
-    ensembleDetails
+    ensembleDetails,
+    beatGrid
   };
 }

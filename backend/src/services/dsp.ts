@@ -1,6 +1,8 @@
 import fs from 'fs';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
+import { extractBeatGrid } from './beatDetection.js';
+import type { BeatGrid } from '../types.js';
 
 const OPENAI_TRANSCRIBE_URL =
   process.env.OPENAI_TRANSCRIBE_URL ?? 'https://api.openai.com/v1/audio/transcriptions';
@@ -11,12 +13,36 @@ export async function extractVocalStem(filePath: string) {
   return { stemPath: filePath, quality: 0.92 };
 }
 
-export async function extractPitchAndTiming(stemPath: string) {
-  return {
-    midi: 'MIDI_DATA',
-    timing: [0, 1, 2, 3],
-    stemPath
-  };
+export async function extractPitchAndTiming(stemPath: string): Promise<{
+  midi: string | null;
+  timing: number[];
+  beatGrid: BeatGrid;
+  stemPath: string;
+}> {
+  try {
+    const beatGrid = await extractBeatGrid(stemPath);
+    return {
+      midi: null,  // Pitch extraction TODO - future feature
+      timing: beatGrid.beats,
+      beatGrid,
+      stemPath
+    };
+  } catch (error) {
+    console.warn('[DSP] Beat extraction failed, using fallback:', (error as Error).message);
+    // Return minimal fallback data
+    return {
+      midi: null,
+      timing: [0, 1, 2, 3],
+      beatGrid: {
+        bpm: 120,
+        confidence: 0.1,
+        beats: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5],
+        downbeats: [0, 2],
+        duration: 4
+      },
+      stemPath
+    };
+  }
 }
 
 export async function transcribeLyrics(stemPath: string) {

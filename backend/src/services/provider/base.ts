@@ -1,4 +1,4 @@
-import { StyleControls } from '../../types';
+import { StyleControls, BeatGrid } from '../../types.js';
 
 export type ProviderRequest = {
   voiceModel: string;
@@ -16,6 +16,8 @@ export type ProviderRequest = {
     tempo: 'fast' | 'moderate' | 'slow';
   };
   emotion?: 'neutral' | 'happy' | 'sad' | 'angry' | 'excited' | 'calm';
+  // Beat grid for rhythm-aware synthesis
+  beatGrid?: BeatGrid;
 };
 
 export type ProviderResponse = {

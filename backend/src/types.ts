@@ -1,3 +1,11 @@
+export type BeatGrid = {
+  bpm: number;
+  confidence: number;
+  beats: number[];      // Beat times in seconds
+  downbeats: number[];  // Measure start times
+  duration: number;
+};
+
 export type StyleControls = {
   brightness: number;
   breathiness: number;
@@ -74,6 +82,8 @@ export type GuideSample = {
     intonation: 'rising' | 'falling' | 'flat' | 'melodic';
     tempo: 'fast' | 'moderate' | 'slow';
   };
+  // Beat grid for rhythm-aware synthesis
+  beatGrid?: BeatGrid;
 };
 
 export type TrainingSample = {
@@ -192,6 +202,7 @@ export type RenderPayload = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  targetBpm?: number;  // Absolute BPM for final render (auto-calculates ratio from detected BPM)
   guideStartTime?: number;
   guideEndTime?: number;
   guideAccentBlend?: number;
@@ -229,6 +240,7 @@ export type RenderJobRecord = {
   guideMatchIntensity?: number;
   guideUseLyrics?: boolean;
   guideTempo?: number;
+  targetBpm?: number;
   rating?: RenderRating;
 };
 

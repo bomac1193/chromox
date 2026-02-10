@@ -24,10 +24,10 @@ export function StyleSlider({ label, min = 0, max = 1, step = 0.01, value, onCha
         value={[value]}
         onValueChange={([next]) => onChange(next)}
       >
-        <Slider.Track className="relative h-[2px] flex-1 rounded-full bg-border-emphasis">
-          <Slider.Range className="absolute h-full bg-accent" />
+        <Slider.Track className="relative h-[4px] flex-1 rounded-full bg-[#CCCCCC]">
+          <Slider.Range className="absolute h-full rounded-full bg-accent" />
         </Slider.Track>
-        <Slider.Thumb className="block h-4 w-4 rounded-full border border-canvas bg-accent" />
+        <Slider.Thumb className="block h-4 w-4 rounded-none bg-black shadow-sm" />
       </Slider.Root>
     </div>
   );

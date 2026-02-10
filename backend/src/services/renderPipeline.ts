@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { EffectSettings, RenderPayload } from '../types';
-import { extractPitchAndTiming, extractVocalStem, transcribeLyrics } from './dsp';
-import { promptToControls } from './llm';
-import { SingingProvider } from './provider/base';
-import { applyAdvancedEffects, defaultEffectSettings } from './effectsProcessor';
+import { EffectSettings, RenderPayload, BeatGrid } from '../types.js';
+import { extractPitchAndTiming, extractVocalStem, transcribeLyrics } from './dsp.js';
+import { promptToControls } from './llm.js';
+import { SingingProvider } from './provider/base.js';
+import { applyAdvancedEffects, defaultEffectSettings } from './effectsProcessor.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -56,7 +56,9 @@ export class ChromaticCorePipeline {
       pronunciationHints: payload.pronunciationHints,
       phoneticLyrics: payload.phoneticLyrics,
       accentType: payload.detectedAccent,
-      prosodyHints: payload.prosodyHints
+      prosodyHints: payload.prosodyHints,
+      // Beat grid for rhythm-aware synthesis
+      beatGrid: pitchData?.beatGrid
     });
 
     const outDir = path.join(process.cwd(), 'renders');
@@ -67,7 +69,16 @@ export class ChromaticCorePipeline {
 
     const effects = payload.effects ?? { ...defaultEffectSettings };
     const processedPath = await applyAdvancedEffects(rawPath, effects, payload.previewSeconds);
-    const tempoAdjustedPath = await applyTempo(processedPath, payload.guideTempo);
+
+    // Calculate tempo ratio: if targetBpm specified, compute from detected BPM
+    let tempoRatio = payload.guideTempo;
+    if (payload.targetBpm && pitchData?.beatGrid?.bpm) {
+      const detectedBpm = pitchData.beatGrid.bpm;
+      tempoRatio = payload.targetBpm / detectedBpm;
+      console.log(`[RenderPipeline] BPM adjustment: ${detectedBpm} → ${payload.targetBpm} (ratio: ${tempoRatio.toFixed(3)})`);
+    }
+
+    const tempoAdjustedPath = await applyTempo(processedPath, tempoRatio);
     const layeredPath = await applyPresetLayers(tempoAdjustedPath, effects.preset);
 
     // Trim output to match guide duration if specified

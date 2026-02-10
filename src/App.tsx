@@ -410,7 +410,7 @@ export default function App() {
                       onGuideLibraryUpdated={refresh}
                       onRateRender={handleRateRender}
                       tasteProfileVersion={tasteProfileVersion}
-                      folioClips={folioClips}
+                      folioClips={allClips}
                       onRemoveFolioClip={handleRemoveFromFolio}
                       onAddToFolio={handleAddToFolio}
                       onUploadToFolio={handleUploadToFolio}

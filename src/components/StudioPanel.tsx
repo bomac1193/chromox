@@ -167,6 +167,7 @@ export function StudioPanel({
   const [customMintMode, setCustomMintMode] = useState<'glitch' | 'dream' | 'anthem'>('glitch');
   const [mintDuration, setMintDuration] = useState<number>(12);
   const [voiceControlsOpen, setVoiceControlsOpen] = useState(false);
+  const [folioSearch, setFolioSearch] = useState('');
   const [effectsOpen, setEffectsOpen] = useState(false);
   const [savingToFolio, setSavingToFolio] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -627,7 +628,7 @@ export function StudioPanel({
           <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
             <input
               type="checkbox"
-              className="accent-blue-300"
+              className=""
               checked={accentLocked}
               onChange={(e) => setAccentLocked(e.target.checked)}
             />
@@ -640,6 +641,58 @@ export function StudioPanel({
                 Guide Vocal (Optional)
               </label>
               <GuideDropzone onFile={setGuide} />
+              {/* Quick Folio picker */}
+              {folioClips.length > 0 && !selectedFolioClipId && !guide && (
+                <div className="mt-2 rounded-lg border border-border-default bg-elevated p-2">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] uppercase tracking-wide text-muted">Or pick from Folio</p>
+                    <button
+                      type="button"
+                      onClick={onOpenFolio}
+                      className="text-[10px] font-medium text-accent hover:underline"
+                    >
+                      Browse All
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search folio..."
+                    value={folioSearch}
+                    onChange={(e) => setFolioSearch(e.target.value)}
+                    className="mb-2 w-full rounded border border-border-default bg-canvas px-2 py-1.5 text-xs text-primary placeholder-muted focus:border-accent focus:outline-none"
+                  />
+                  <div className="max-h-32 space-y-1 overflow-y-auto">
+                    {folioClips
+                      .filter((clip) =>
+                        !folioSearch.trim() ||
+                        clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
+                        clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
+                      )
+                      .slice(0, folioSearch.trim() ? 8 : 4)
+                      .map((clip) => (
+                        <button
+                          key={clip.id}
+                          type="button"
+                          onClick={() => {
+                            onSelectFolioClip(clip.id);
+                            setSelectedGuideSampleId(undefined);
+                            setFolioSearch('');
+                          }}
+                          className="flex w-full items-center gap-2 rounded border border-transparent bg-canvas px-2 py-1.5 text-left transition hover:border-accent/30 hover:bg-accent/5"
+                        >
+                          <BookmarkIcon size={10} className="shrink-0 text-muted" />
+                          <span className="flex-1 truncate text-xs text-primary">{clip.name}</span>
+                        </button>
+                      ))}
+                    {folioSearch.trim() && folioClips.filter((clip) =>
+                      clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
+                      clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="py-1 text-center text-[10px] text-muted">No matches</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             {guide && (
               <div className="flex flex-col gap-2 rounded-xl border border-border-default bg-surface p-3">
@@ -715,7 +768,7 @@ export function StudioPanel({
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted">
                   <input
                     type="checkbox"
-                    className="accent-blue-300"
+                    className=""
                     checked={guideUseLyrics}
                     onChange={(e) => setGuideUseLyrics(e.target.checked)}
                     disabled={!hasGuideSelection}
@@ -742,7 +795,7 @@ export function StudioPanel({
                     value={guideMatchIntensity}
                     onChange={(e) => setGuideMatchIntensity(parseFloat(e.target.value))}
                     disabled={!hasGuideSelection}
-                    className="mt-1 w-full accent-blue-300 disabled:opacity-40"
+                    className="mt-1 w-full  disabled:opacity-40"
                   />
                 </div>
                 <div>
@@ -760,7 +813,7 @@ export function StudioPanel({
                     value={guideAccentBlend}
                     onChange={(e) => setGuideAccentBlend(parseFloat(e.target.value))}
                     disabled={!hasGuideSelection}
-                    className="mt-1 w-full accent-blue-300 disabled:opacity-40"
+                    className="mt-1 w-full  disabled:opacity-40"
                   />
                   <p className="mt-1 text-[10px] text-muted">
                     Left: Keep guide's accent (Patois, etc). Right: Use persona's trained voice
@@ -780,7 +833,7 @@ export function StudioPanel({
                     value={guideTempo}
                     onChange={(e) => setGuideTempo(parseFloat(e.target.value))}
                     disabled={!hasGuideSelection}
-                    className="mt-1 w-full accent-blue-300 disabled:opacity-40"
+                    className="mt-1 w-full disabled:opacity-40"
                   />
                 </div>
                 <div>
@@ -891,55 +944,75 @@ export function StudioPanel({
                 ) : null;
               })()}
 
-              {/* Quick-pick folio clips */}
-              {folioClips.length > 0 && !selectedFolioClipId && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-[10px] uppercase tracking-wide text-muted">Quick Select</p>
-                  {folioClips.slice(0, 3).map((clip) => (
-                    <button
-                      key={clip.id}
-                      type="button"
-                      onClick={() => {
-                        onSelectFolioClip(clip.id);
-                        setSelectedGuideSampleId(undefined);
-                        setGuide(undefined);
-                      }}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border-default bg-canvas p-2.5 text-left transition hover:border-accent/40 hover:bg-accent/5"
-                    >
-                      <BookmarkIcon size={12} className="shrink-0 text-muted" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-primary">{clip.name}</p>
-                        <p className="text-[10px] text-muted">
-                          {clip.sourcePersonaName ? `${clip.sourcePersonaName} · ` : ''}{clip.source === 'render' ? 'Render' : 'Upload'}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-accent">Use</span>
-                    </button>
-                  ))}
-                  {folioClips.length > 3 && (
+              {/* Folio Browser */}
+              {!selectedFolioClipId && (
+                <div className="mt-3 rounded-lg border border-border-default bg-elevated p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+                      Folio {folioClips.length > 0 && `(${folioClips.length})`}
+                    </p>
                     <button
                       type="button"
                       onClick={onOpenFolio}
-                      className="w-full rounded-lg border border-dashed border-accent/30 py-2 text-center text-[11px] font-medium text-accent transition hover:border-accent hover:bg-accent/5"
+                      className="text-[10px] font-medium text-accent hover:underline"
                     >
-                      +{folioClips.length - 3} more in Folio
+                      {folioClips.length > 0 ? 'Manage' : 'Open'}
                     </button>
-                  )}
-                </div>
-              )}
+                  </div>
 
-              {folioClips.length === 0 && (
-                <div className="mt-3 flex flex-col items-center rounded-lg border border-dashed border-accent/20 bg-accent/5 py-4 text-center">
-                  <BookmarkIcon size={20} className="mb-1 text-accent/40" />
-                  <p className="text-xs text-secondary">No clips saved yet</p>
-                  <p className="mt-0.5 text-[10px] text-muted">Save renders or upload clips to your folio</p>
-                  <button
-                    type="button"
-                    onClick={onOpenFolio}
-                    className="mt-2 rounded-lg border border-accent/30 px-3 py-1.5 text-[11px] font-medium text-accent transition hover:border-accent hover:bg-accent/10"
-                  >
-                    Open Folio
-                  </button>
+                  {folioClips.length > 0 ? (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Search clips..."
+                        value={folioSearch}
+                        onChange={(e) => setFolioSearch(e.target.value)}
+                        className="mb-2 w-full rounded border border-border-default bg-canvas px-2.5 py-1.5 text-xs text-primary placeholder-muted focus:border-accent focus:outline-none"
+                      />
+                      <div className="max-h-40 space-y-1 overflow-y-auto">
+                        {folioClips
+                          .filter((clip) =>
+                            !folioSearch.trim() ||
+                            clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
+                            clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
+                          )
+                          .slice(0, folioSearch.trim() ? 12 : 6)
+                          .map((clip) => (
+                            <button
+                              key={clip.id}
+                              type="button"
+                              onClick={() => {
+                                onSelectFolioClip(clip.id);
+                                setSelectedGuideSampleId(undefined);
+                                setGuide(undefined);
+                                setFolioSearch('');
+                              }}
+                              className="flex w-full items-center gap-2 rounded border border-transparent bg-canvas px-2 py-1.5 text-left transition hover:border-accent/30 hover:bg-accent/5"
+                            >
+                              <BookmarkIcon size={10} className="shrink-0 text-muted" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-medium text-primary">{clip.name}</p>
+                                <p className="truncate text-[9px] text-muted">
+                                  {clip.sourcePersonaName || (clip.source === 'render' ? 'Render' : 'Upload')}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        {folioSearch.trim() && folioClips.filter((clip) =>
+                          clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
+                          clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
+                        ).length === 0 && (
+                          <p className="py-2 text-center text-[10px] text-muted">No matches for "{folioSearch}"</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-3 text-center">
+                      <BookmarkIcon size={16} className="mx-auto mb-1 text-muted" />
+                      <p className="text-[10px] text-muted">No clips in folio</p>
+                      <p className="text-[9px] text-muted">Save renders or upload clips</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1144,7 +1217,7 @@ export function StudioPanel({
                 <label className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-secondary">
                   <input
                     type="checkbox"
-                    className="accent-blue-300"
+                    className=""
                     checked={effects.bypassEffects ?? false}
                     onChange={(e) => setEffects((prev) => ({ ...prev, bypassEffects: e.target.checked }))}
                   />
@@ -1170,7 +1243,7 @@ export function StudioPanel({
                           [key]: parseFloat(e.target.value)
                         }))
                       }
-                      className="mt-1 w-full accent-blue-300"
+                      className="mt-1 w-full "
                     />
                   </div>
                 ))}
@@ -1230,7 +1303,7 @@ export function StudioPanel({
                             [key]: parseFloat(e.target.value)
                           }))
                         }
-                        className="mt-1 w-full accent-blue-300"
+                        className="mt-1 w-full "
                       />
                     </div>
                   ))}
