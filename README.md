@@ -112,7 +112,10 @@ cd .. && npm run build && npm run tauri:build
 - `GET /api/personas/:id` — inspect persona
 - `POST /api/voice-clone/analyze` — analyze vocal stem and extract voice profile
 - `POST /api/voice-clone/create-persona` — create cloned voice persona from vocal stem
-- `POST /api/voice-clone/retrain/:id` — refine voice clone with additional samples
+- `POST /api/voice-clone/train/:id` — add training samples to improve clone fidelity
+- `POST /api/voice-clone/calibrate/:id` — recalibrate voice model (detect outliers, optimize weights)
+- `GET /api/voice-clone/training-status/:id` — get training samples and fidelity score
+- `DELETE /api/voice-clone/sample/:personaId/:sampleId` — remove a training sample
 - `POST /api/llm/rewrite` — rewrite lyrics via LLM stub
 - `POST /api/render` — full Chromatic-Core rendering pipeline (multipart w/ optional `guide` file)
 

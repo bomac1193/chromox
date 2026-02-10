@@ -76,19 +76,33 @@ export type GuideSample = {
   };
 };
 
+export type TrainingSample = {
+  id: string;
+  path: string;
+  originalName: string;
+  duration: number;
+  addedAt: string;
+  embedding: number[];
+  characteristics: VoiceCharacteristics;
+  weight: number; // 0-1, calibration adjusts this
+  isOutlier: boolean; // flagged during calibration
+};
+
+export type VoiceCharacteristics = {
+  pitchRange: { min: number; max: number; mean: number };
+  formants: number[];
+  spectralCentroid: number;
+  spectralRolloff: number;
+  breathiness: number;
+  brightness: number;
+  timbre: number[];
+  vibratoRate: number;
+  vibratoDepth: number;
+  energyMean: number;
+};
+
 export type VoiceProfile = {
-  characteristics: {
-    pitchRange: { min: number; max: number; mean: number };
-    formants: number[];
-    spectralCentroid: number;
-    spectralRolloff: number;
-    breathiness: number;
-    brightness: number;
-    timbre: number[];
-    vibratoRate: number;
-    vibratoDepth: number;
-    energyMean: number;
-  };
+  characteristics: VoiceCharacteristics;
   embedding: {
     embedding: number[];
     provider: 'openai' | 'rvc' | 'elevenlabs' | 'chromox';
@@ -97,6 +111,11 @@ export type VoiceProfile = {
   samplePath: string;
   sampleDuration: number;
   analysisTimestamp: string;
+  // Training history
+  trainingSamples?: TrainingSample[];
+  trainingVersion: number;
+  lastCalibratedAt?: string;
+  fidelityScore?: number; // 0-100, computed from sample consistency
 };
 
 export type LicensingTerms = {

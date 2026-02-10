@@ -26,11 +26,13 @@ import {
 import { FolioTab } from './components/FolioTab';
 import { DownloadsTab } from './components/DownloadsTab';
 import { EditPersonaModal } from './components/EditPersonaModal';
+import { VoiceTrainingModal } from './components/VoiceTrainingModal';
 import { AudioProvider } from './contexts/AudioContext';
-import { LogoIcon, MicIcon, FolderIcon, BookmarkIcon, ShieldIcon } from './components/Icons';
+import { LogoIcon, MicIcon, FolderIcon, BookmarkIcon, ShieldIcon, ImageIcon } from './components/Icons';
 import { BovedaTab } from './components/boveda/BovedaTab';
+import { BrowseTab } from './components/BrowseTab';
 
-type TabId = 'studio' | 'folio' | 'downloads' | 'boveda';
+type TabId = 'studio' | 'folio' | 'downloads' | 'browse' | 'boveda';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('studio');
@@ -41,6 +43,7 @@ export default function App() {
   const [renderHistory, setRenderHistory] = useState<RenderHistoryItem[]>([]);
   const [prefillJob, setPrefillJob] = useState<RenderHistoryItem | null>(null);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
+  const [trainingPersona, setTrainingPersona] = useState<Persona | null>(null);
   const [tasteProfileVersion, setTasteProfileVersion] = useState(0);
   const [folioClips, setFolioClips] = useState<FolioClip[]>([]);
   const [selectedFolioClipId, setSelectedFolioClipId] = useState<string | undefined>(undefined);
@@ -191,6 +194,7 @@ export default function App() {
     { id: 'studio', label: 'Studio', icon: <MicIcon size={14} /> },
     { id: 'folio', label: 'Folio', icon: <BookmarkIcon size={14} />, count: allClips.length },
     { id: 'downloads', label: 'Downloads', icon: <FolderIcon size={14} />, count: renderHistory.length },
+    { id: 'browse', label: 'Browse', icon: <ImageIcon size={14} /> },
     { id: 'boveda', label: 'Boveda', icon: <ShieldIcon size={14} /> },
   ];
 
@@ -381,6 +385,14 @@ export default function App() {
                           >
                             Edit Persona
                           </button>
+                          {activePersona.is_cloned && (
+                            <button
+                              onClick={() => setTrainingPersona(activePersona)}
+                              className="border border-accent/30 bg-accent/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-accent transition hover:bg-accent/10 hover:border-accent/50"
+                            >
+                              Train Voice
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -471,6 +483,9 @@ export default function App() {
             />
           )}
 
+          {/* Browse Tab */}
+          {activeTab === 'browse' && <BrowseTab />}
+
           {/* Boveda Tab */}
           {activeTab === 'boveda' && (
             <BovedaTab
@@ -504,6 +519,12 @@ export default function App() {
           persona={editingPersona}
           onClose={() => setEditingPersona(null)}
           onSubmit={handleEditPersona}
+        />
+        <VoiceTrainingModal
+          open={Boolean(trainingPersona)}
+          persona={trainingPersona}
+          onClose={() => setTrainingPersona(null)}
+          onUpdate={refresh}
         />
       </div>
     </AudioProvider>

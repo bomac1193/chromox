@@ -2,7 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import { Router } from 'express';
 import multer from 'multer';
-import { analyzeVoiceFromStem, characteristicsToStyleControls, saveVoiceProfile } from '../services/voiceAnalysis';
+import {
+  analyzeVoiceFromStem,
+  characteristicsToStyleControls,
+  saveVoiceProfile,
+  addTrainingSample,
+  calibrateVoiceProfile,
+  removeTrainingSample,
+  loadVoiceProfile
+} from '../services/voiceAnalysis';
 import { createPersona, updatePersona } from '../services/personaStore';
 import { extractVocalStem } from '../services/dsp';
 import { detectVoiceCharacteristics, getModeLabel, getAccentLabel, AccentCategory } from '../services/voiceDetection';
@@ -95,7 +103,7 @@ router.post('/analyze', upload.single('vocal'), async (req, res) => {
     const detection = await detectVoiceCharacteristics(stemPath);
 
     // Analyze voice and extract profile
-    const voiceProfile = await analyzeVoiceFromStem(stemPath);
+    const voiceProfile = await analyzeVoiceFromStem(stemPath, req.file.originalname);
 
     // Generate suggested style controls from voice characteristics
     const suggestedControls = characteristicsToStyleControls(voiceProfile.characteristics);
@@ -161,8 +169,8 @@ router.post(
     console.log(`[VoiceClone] Auto-detected: ${detection.voiceType} voice, ${detection.accent} accent`);
     console.log(`[VoiceClone] Using provider: ${selectedProvider} (mode: ${selectedMode})`);
 
-    // Analyze voice profile
-    const voiceProfile = await analyzeVoiceFromStem(stemPath);
+    // Analyze voice profile with original filename
+    const voiceProfile = await analyzeVoiceFromStem(stemPath, vocalFile.originalname);
 
     // Generate default style controls from voice characteristics
     const defaultControls = characteristicsToStyleControls(voiceProfile.characteristics);
@@ -219,30 +227,235 @@ router.post(
 );
 
 /**
- * POST /api/voice-clone/retrain
- * Retrains/refines a voice clone with additional samples.
+ * POST /api/voice-clone/train/:personaId
+ * Adds new training samples to improve voice clone fidelity.
+ * Each sample is blended with existing profile using weighted average.
  */
-router.post('/retrain/:personaId', upload.array('vocals', 5), async (req, res) => {
+router.post('/train/:personaId', upload.array('vocals', 5), async (req, res) => {
   try {
     const { personaId } = req.params;
+    const files = req.files as Express.Multer.File[];
 
-    if (!req.files || req.files.length === 0) {
+    if (!files || files.length === 0) {
       return res.status(400).json({ error: 'No vocal files uploaded' });
     }
 
-    console.log(`[VoiceClone] Retraining persona ${personaId} with ${req.files.length} samples`);
+    // Verify persona exists
+    const { findPersona } = await import('../services/personaStore');
+    const persona = findPersona(personaId);
+    if (!persona) {
+      return res.status(404).json({ error: 'Persona not found' });
+    }
 
-    // TODO: Implement voice profile refinement with multiple samples
-    // This would average/blend characteristics or retrain the embedding model
+    console.log(`[VoiceClone] Training persona ${personaId} with ${files.length} new samples`);
+
+    const results = [];
+    let totalFidelityDelta = 0;
+
+    for (const file of files) {
+      // Extract vocal stem if needed
+      const { stemPath } = await extractVocalStem(file.path);
+
+      // Add training sample
+      const result = await addTrainingSample(personaId, stemPath, file.originalname);
+      results.push({
+        sampleId: result.sampleId,
+        originalName: file.originalname,
+        fidelityDelta: result.fidelityDelta
+      });
+      totalFidelityDelta += result.fidelityDelta;
+    }
+
+    // Update persona with new voice profile
+    const updatedProfile = loadVoiceProfile(personaId);
+    if (updatedProfile) {
+      updatePersona(personaId, { voice_profile: updatedProfile });
+    }
 
     res.json({
       success: true,
-      message: `Voice model retrained with ${req.files.length} additional samples`
+      message: `Added ${files.length} training sample(s)`,
+      samples: results,
+      totalFidelityDelta,
+      newFidelityScore: updatedProfile?.fidelityScore,
+      trainingVersion: updatedProfile?.trainingVersion,
+      totalSamples: updatedProfile?.trainingSamples?.length
     });
   } catch (error) {
-    console.error('[VoiceClone] Retraining failed:', error);
+    console.error('[VoiceClone] Training failed:', error);
     res.status(500).json({
-      error: 'Retraining failed',
+      error: 'Training failed',
+      details: (error as Error).message
+    });
+  }
+});
+
+/**
+ * POST /api/voice-clone/calibrate/:personaId
+ * Recalibrates voice profile by:
+ * - Detecting outlier samples that don't match
+ * - Adjusting sample weights for optimal blending
+ * - Recomputing the combined embedding
+ */
+router.post('/calibrate/:personaId', async (req, res) => {
+  try {
+    const { personaId } = req.params;
+
+    // Verify persona exists
+    const { findPersona } = await import('../services/personaStore');
+    const persona = findPersona(personaId);
+    if (!persona) {
+      return res.status(404).json({ error: 'Persona not found' });
+    }
+
+    console.log(`[VoiceClone] Calibrating persona ${personaId}`);
+
+    const result = await calibrateVoiceProfile(personaId);
+
+    // Update persona with calibrated profile
+    updatePersona(personaId, { voice_profile: result.profile });
+
+    res.json({
+      success: true,
+      message: result.outlierCount > 0
+        ? `Calibration complete. Found ${result.outlierCount} outlier sample(s).`
+        : 'Calibration complete. All samples are consistent.',
+      outlierCount: result.outlierCount,
+      adjustments: result.adjustments,
+      fidelityDelta: result.fidelityDelta,
+      newFidelityScore: result.profile.fidelityScore,
+      lastCalibratedAt: result.profile.lastCalibratedAt
+    });
+  } catch (error) {
+    console.error('[VoiceClone] Calibration failed:', error);
+    res.status(500).json({
+      error: 'Calibration failed',
+      details: (error as Error).message
+    });
+  }
+});
+
+/**
+ * DELETE /api/voice-clone/sample/:personaId/:sampleId
+ * Removes a training sample from the voice profile.
+ */
+router.delete('/sample/:personaId/:sampleId', async (req, res) => {
+  try {
+    const { personaId, sampleId } = req.params;
+
+    // Verify persona exists
+    const { findPersona } = await import('../services/personaStore');
+    const persona = findPersona(personaId);
+    if (!persona) {
+      return res.status(404).json({ error: 'Persona not found' });
+    }
+
+    console.log(`[VoiceClone] Removing sample ${sampleId} from persona ${personaId}`);
+
+    const result = await removeTrainingSample(personaId, sampleId);
+
+    if (!result.removed) {
+      return res.status(404).json({ error: 'Sample not found' });
+    }
+
+    // Update persona with updated profile
+    updatePersona(personaId, { voice_profile: result.profile });
+
+    res.json({
+      success: true,
+      message: 'Sample removed',
+      newFidelityScore: result.profile.fidelityScore,
+      remainingSamples: result.profile.trainingSamples?.length
+    });
+  } catch (error) {
+    console.error('[VoiceClone] Sample removal failed:', error);
+    res.status(500).json({
+      error: 'Sample removal failed',
+      details: (error as Error).message
+    });
+  }
+});
+
+/**
+ * GET /api/voice-clone/training-status/:personaId
+ * Returns training status and sample details for a persona.
+ * Migrates legacy profiles that don't have trainingSamples yet.
+ */
+router.get('/training-status/:personaId', async (req, res) => {
+  try {
+    const { personaId } = req.params;
+    const fs = await import('fs');
+    const pathModule = await import('path');
+    const { v4: uuidv4 } = await import('uuid');
+
+    let profile = loadVoiceProfile(personaId);
+
+    // If no profile on disk, try to get from persona
+    if (!profile) {
+      const { findPersona } = await import('../services/personaStore');
+      const persona = findPersona(personaId);
+      if (persona?.voice_profile) {
+        profile = persona.voice_profile;
+        saveVoiceProfile(personaId, profile);
+      }
+    }
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Voice profile not found' });
+    }
+
+    // Migrate legacy profiles without trainingSamples
+    let samples = profile.trainingSamples || [];
+    if (samples.length === 0 && profile.samplePath) {
+      // Create initial training sample from legacy data
+      if (fs.existsSync(profile.samplePath)) {
+        const legacySample = {
+          id: uuidv4(),
+          path: profile.samplePath,
+          originalName: pathModule.basename(profile.samplePath),
+          duration: profile.sampleDuration || 0,
+          addedAt: profile.analysisTimestamp || new Date().toISOString(),
+          embedding: profile.embedding.embedding,
+          characteristics: profile.characteristics,
+          weight: 1.0,
+          isOutlier: false
+        };
+        samples = [legacySample];
+
+        // Update profile with migration
+        profile.trainingSamples = samples;
+        profile.trainingVersion = profile.trainingVersion || 1;
+        profile.fidelityScore = profile.fidelityScore || 50;
+        saveVoiceProfile(personaId, profile);
+
+        // Also update persona
+        updatePersona(personaId, { voice_profile: profile });
+        console.log(`[VoiceClone] Migrated legacy profile for ${personaId}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      personaId,
+      fidelityScore: profile.fidelityScore || 50,
+      trainingVersion: profile.trainingVersion || 1,
+      lastCalibratedAt: profile.lastCalibratedAt,
+      totalSamples: samples.length,
+      totalDuration: samples.reduce((sum, s) => sum + (s.duration || 0), 0),
+      samples: samples.map(s => ({
+        id: s.id,
+        originalName: s.originalName,
+        duration: s.duration || 0,
+        addedAt: s.addedAt,
+        weight: s.weight,
+        isOutlier: s.isOutlier
+      })),
+      outlierCount: samples.filter(s => s.isOutlier).length
+    });
+  } catch (error) {
+    console.error('[VoiceClone] Training status failed:', error);
+    res.status(500).json({
+      error: 'Failed to get training status',
       details: (error as Error).message
     });
   }
