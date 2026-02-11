@@ -104,6 +104,77 @@ export async function removeFolioClip(id: string): Promise<boolean> {
 }
 
 /**
+ * Fetch video collections from Folio (YouTube, TikTok, etc.)
+ * These can be imported as voice reference samples.
+ */
+export async function listFolioVideos(tag?: string): Promise<FolioVideo[]> {
+  try {
+    const url = new URL(`${FOLIO_API}/api/collections`);
+    // Exclude audio clips - we want videos
+    url.searchParams.set('excludeContentType', 'AUDIO_CLIP');
+    if (tag) {
+      url.searchParams.set('tag', tag);
+    }
+
+    const res = await fetch(url.toString(), { headers: headers() });
+    if (!res.ok) {
+      console.error('[FolioStore] Failed to list videos:', res.status, await res.text());
+      return [];
+    }
+
+    const data = (await res.json()) as { collections: Record<string, unknown>[] };
+    return data.collections.map((c) => ({
+      id: c.id as string,
+      title: c.title as string,
+      url: c.url as string,
+      platform: c.platform as string,
+      thumbnail: c.thumbnail as string | undefined,
+      tags: c.tags ? (c.tags as string).split(',').filter(Boolean) : [],
+      savedAt: c.savedAt as string,
+    }));
+  } catch (error) {
+    console.error('[FolioStore] Error listing videos:', error);
+    return [];
+  }
+}
+
+export type FolioVideo = {
+  id: string;
+  title: string;
+  url: string;
+  platform: string;
+  thumbnail?: string;
+  tags: string[];
+  savedAt: string;
+};
+
+/**
+ * Fetch a single video collection from Folio by ID.
+ */
+export async function findFolioVideo(id: string): Promise<FolioVideo | undefined> {
+  try {
+    const res = await fetch(`${FOLIO_API}/api/collections/${id}`, {
+      headers: headers(),
+    });
+    if (!res.ok) return undefined;
+
+    const c = (await res.json()) as Record<string, unknown>;
+    return {
+      id: c.id as string,
+      title: c.title as string,
+      url: c.url as string,
+      platform: c.platform as string,
+      thumbnail: c.thumbnail as string | undefined,
+      tags: c.tags ? (c.tags as string).split(',').filter(Boolean) : [],
+      savedAt: c.savedAt as string,
+    };
+  } catch (error) {
+    console.error('[FolioStore] Error finding video:', error);
+    return undefined;
+  }
+}
+
+/**
  * Download audio from the Folio app and cache it locally for the render pipeline.
  * Returns the local file path.
  */

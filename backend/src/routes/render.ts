@@ -8,6 +8,7 @@ import { createRenderJob } from '../services/renderStore';
 import { resolveProvider } from '../services/provider/providerRegistry';
 import { ensureLocalAudio } from '../services/folioStore';
 import { recordSonicSignal } from '../services/sonicGenomeStore';
+import { recordSampleUsage } from '../services/sampleEffectiveness';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -102,6 +103,15 @@ router.post('/render', upload.single('guide'), async (req, res) => {
       guideUseLyrics,
       guideTempo
     });
+
+    // Track sample usage for effectiveness scoring
+    if (guideSampleId) {
+      try {
+        await recordSampleUsage(personaId, guideSampleId);
+      } catch (e) {
+        console.warn('[SampleEffectiveness] Failed to record sample usage', e);
+      }
+    }
 
     // Emit sonic signal
     try {

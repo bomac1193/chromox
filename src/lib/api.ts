@@ -11,7 +11,11 @@ import {
   SonicGenomeSummary,
   SonicArchetype,
   Relic,
-  RelicPackSummary
+  RelicPackSummary,
+  PhotoMetadata,
+  PhotoGallerySettings,
+  PhotoScanResult,
+  SimilarityMatch
 } from '../types';
 
 export const API_HOST = 'http://localhost:4414';
@@ -382,5 +386,121 @@ export async function fetchReliquaryUnlocks() {
 
 export async function unlockRelicPack(packId: string, password: string) {
   const { data } = await client.post('/reliquary/unlock', { packId, password });
+  return data;
+}
+
+// ── Photo Gallery ─────────────────────────────────────────────────────
+
+export async function fetchPhotos(filters?: {
+  color?: string;
+  search?: string;
+  clothingType?: string;
+  pose?: string;
+  mood?: string;
+  setting?: string;
+  sort?: string;
+}) {
+  const params = new URLSearchParams();
+  if (filters?.color) params.append('color', filters.color);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.clothingType) params.append('clothingType', filters.clothingType);
+  if (filters?.pose) params.append('pose', filters.pose);
+  if (filters?.mood) params.append('mood', filters.mood);
+  if (filters?.setting) params.append('setting', filters.setting);
+  if (filters?.sort) params.append('sort', filters.sort);
+
+  const { data } = await client.get<PhotoMetadata[]>(`/photos?${params.toString()}`);
+  return data;
+}
+
+export async function fetchPhoto(id: string) {
+  const { data } = await client.get<PhotoMetadata>(`/photos/${id}`);
+  return data;
+}
+
+export async function fetchSimilarPhotos(id: string, threshold?: number) {
+  const params = threshold ? `?threshold=${threshold}` : '';
+  const { data } = await client.get<SimilarityMatch[]>(`/photos/${id}/similar${params}`);
+  return data;
+}
+
+export async function scanPhotoFolder(folderPath: string) {
+  const { data } = await client.post<PhotoScanResult>('/photos/scan', { folderPath });
+  return data;
+}
+
+export async function fetchPhotoSettings() {
+  const { data } = await client.get<PhotoGallerySettings>('/photos/settings');
+  return data;
+}
+
+export async function updatePhotoSettings(updates: Partial<PhotoGallerySettings>) {
+  const { data } = await client.patch<PhotoGallerySettings>('/photos/settings', updates);
+  return data;
+}
+
+export async function fetchPhotoColors() {
+  const { data } = await client.get<{ color: string; category: string; count: number }[]>('/photos/colors');
+  return data;
+}
+
+export async function fetchPhotoElements() {
+  const { data } = await client.get<{
+    clothingTypes: string[];
+    poses: string[];
+    moods: string[];
+    settings: string[];
+  }>('/photos/elements');
+  return data;
+}
+
+export async function deletePhotoFromGallery(id: string) {
+  await client.delete(`/photos/${id}`);
+}
+
+export async function updatePhotoElements(id: string, elements: PhotoMetadata['elements']) {
+  const { data } = await client.patch<PhotoMetadata>(`/photos/${id}`, { elements });
+  return data;
+}
+
+// ── Voice Library ─────────────────────────────────────────────────────
+
+export interface FolioVideo {
+  id: string;
+  title: string;
+  url: string;
+  platform: string;
+  thumbnail?: string;
+  tags: string[];
+  savedAt: string;
+}
+
+export async function fetchFolioVideos(tag?: string) {
+  const params = tag ? `?tag=${encodeURIComponent(tag)}` : '';
+  const { data } = await client.get<FolioVideo[]>(`/folio/videos${params}`);
+  return data;
+}
+
+export async function importFromFolioToPersona(personaId: string, folioCollectionId: string, name?: string) {
+  const { data } = await client.post<GuideSample>(`/personas/${personaId}/guide-samples/from-folio`, {
+    folioCollectionId,
+    name
+  });
+  return data;
+}
+
+export async function importFromUrlToPersona(personaId: string, url: string, name?: string) {
+  const { data } = await client.post<GuideSample>(`/personas/${personaId}/guide-samples/from-url`, {
+    url,
+    name
+  });
+  return data;
+}
+
+export async function saveRenderAsGuide(personaId: string, renderId: string, name?: string) {
+  const { data } = await client.post<GuideSample>(`/personas/${personaId}/guide-samples/from-render`, {
+    renderId,
+    name
+  });
   return data;
 }

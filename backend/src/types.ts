@@ -48,7 +48,9 @@ export type GuideSample = {
   path: string;
   url?: string;
   uploaded_at: string;
-  source?: 'user' | 'ai-lab';
+  source?: 'user' | 'ai-lab' | 'folio';
+  folioCollectionId?: string;  // Reference to Folio collection item
+  folioVideoUrl?: string;      // Original video URL from Folio
   tags?: string[];
   transcript?: string;
   embedding?: number[];
@@ -84,6 +86,12 @@ export type GuideSample = {
   };
   // Beat grid for rhythm-aware synthesis
   beatGrid?: BeatGrid;
+  // Effectiveness tracking (conviction score for samples)
+  useCount?: number;           // Times used in a render
+  likeCount?: number;          // Times render was liked
+  dislikeCount?: number;       // Times render was disliked
+  effectivenessScore?: number; // 0-100, calculated from likes/uses
+  lastUsedAt?: string;         // ISO timestamp
 };
 
 export type TrainingSample = {

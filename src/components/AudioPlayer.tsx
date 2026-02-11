@@ -125,9 +125,9 @@ export function AudioPlayer({ src, label = 'Playback' }: Props) {
           setPlaying(false);
         }}
         crossOrigin="anonymous"
-      >
-        {src && <source src={src} />}
-      </audio>
+        src={src || undefined}
+      />
+
     </div>
   );
 }

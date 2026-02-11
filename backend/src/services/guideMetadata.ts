@@ -59,7 +59,7 @@ export function buildHeuristicGuideMetadata(input: {
   path: string;
   mode?: 'glitch' | 'dream' | 'anthem';
   tags?: string[];
-  source?: 'user' | 'ai-lab';
+  source?: 'user' | 'ai-lab' | 'folio';
 }) {
   const mood = deriveMood(input);
   const tempo = Number((0.7 + pseudoRandom(`${input.path}-tempo`, 0, 0.8)).toFixed(2));
@@ -85,7 +85,7 @@ export async function generateGuideMetadata(input: {
   path: string;
   mode?: 'glitch' | 'dream' | 'anthem';
   tags?: string[];
-  source?: 'user' | 'ai-lab';
+  source?: 'user' | 'ai-lab' | 'folio';
 }) {
   const heuristics = buildHeuristicGuideMetadata(input);
   let transcript = heuristics.transcript;

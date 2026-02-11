@@ -15,10 +15,12 @@
     "@headlessui/react": "^1.7.18",
     "@radix-ui/react-slider": "^1.1.1",
     "@tauri-apps/api": "2.5.0",
+    "@types/react-window": "^1.8.8",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-window": "^2.2.6",
     "tailwind-merge": "^2.2.1"
   },
   "devDependencies": {

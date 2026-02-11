@@ -45,6 +45,19 @@ try {
 }
 
 function deriveGuideUrl(filePath: string) {
+  if (!filePath) return '';
+
+  // Handle paths that are already relative URLs
+  if (filePath.startsWith('/media/')) return filePath;
+
+  // Extract the relative part after 'guide_samples'
+  const guideSamplesIndex = filePath.replace(/\\/g, '/').indexOf('guide_samples/');
+  if (guideSamplesIndex !== -1) {
+    const relativePart = filePath.substring(guideSamplesIndex + 'guide_samples/'.length);
+    return `/media/guides/${relativePart.replace(/\\/g, '/')}`;
+  }
+
+  // Fallback: use path.relative
   const guideRoot = path.join(process.cwd(), 'guide_samples');
   const relative = path.relative(guideRoot, filePath);
   return `/media/guides/${relative.replace(/\\/g, '/')}`;
@@ -100,10 +113,12 @@ type GuideSampleInput = {
   name: string;
   originalName: string;
   path: string;
-  source?: 'user' | 'ai-lab';
+  source?: 'user' | 'ai-lab' | 'folio';
   tags?: string[];
   mode?: 'glitch' | 'dream' | 'anthem';
   mintedFromRenderId?: string;
+  folioCollectionId?: string;
+  folioVideoUrl?: string;
 };
 
 export async function addGuideSample(personaId: string, sample: GuideSampleInput) {
@@ -132,6 +147,9 @@ export async function addGuideSample(personaId: string, sample: GuideSampleInput
     aiModel: metadata.aiModel,
     recommendedUse: metadata.recommendedUse,
     mintedFromRenderId: sample.mintedFromRenderId,
+    // Folio integration fields
+    folioCollectionId: sample.folioCollectionId,
+    folioVideoUrl: sample.folioVideoUrl,
     // Accent detection metadata from AssemblyAI/Rev.ai
     accentMetadata: metadata.accentMetadata,
     transcriptionConfidence: metadata.transcriptionConfidence,

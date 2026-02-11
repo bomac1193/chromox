@@ -12,6 +12,7 @@ import folioRoutes from './routes/folio';
 import genomeRoutes from './routes/genome';
 import reliquaryRoutes from './routes/reliquary';
 import usageRoutes from './routes/usage';
+import photoRoutes from './routes/photos';
 import { config } from './config';
 
 const app = express();
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use('/renders', express.static(path.join(process.cwd(), 'renders')));
 app.use('/media/personas', express.static(path.join(process.cwd(), 'persona_media')));
 app.use('/media/guides', express.static(path.join(process.cwd(), 'guide_samples')));
+app.use('/media/thumbs', express.static(path.join(process.cwd(), 'photo_thumbs')));
 
 
 app.use('/api', personaRoutes);
@@ -34,6 +36,7 @@ app.use('/api', genomeRoutes);
 app.use('/api', reliquaryRoutes);
 app.use('/api/voice-clone', voiceCloneRoutes);
 app.use('/api/usage', usageRoutes);
+app.use('/api', photoRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', engine: 'Persona Synth Kernel' }));
 

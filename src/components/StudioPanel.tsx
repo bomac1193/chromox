@@ -5,7 +5,7 @@ import { GuideDropzone } from './GuideDropzone';
 import { Meter } from './Meter';
 import { AudioPlayer } from './AudioPlayer';
 import { uploadGuideSample, fetchGuideSuggestions, mintGuideClip, fetchTasteProfile, API_HOST, sendSonicSignal } from '../lib/api';
-import { ThumbUpIcon, ThumbDownIcon, ChevronDownIcon, BookmarkIcon, SparklesIcon } from './Icons';
+import { ThumbUpIcon, ThumbDownIcon, ChevronDownIcon, SparklesIcon } from './Icons';
 import { studioPresets, parseStylePrompt, applyPreset, StudioPreset } from '../lib/studioPresets';
 
 type StudioMode = 'simple' | 'advanced';
@@ -105,13 +105,7 @@ type Props = {
   onGuideLibraryUpdated?: () => void;
   onRateRender: (jobId: string, rating: 'like' | 'dislike' | 'neutral') => Promise<void>;
   tasteProfileVersion?: number;
-  folioClips: FolioClip[];
-  onRemoveFolioClip: (id: string) => Promise<void>;
-  onAddToFolio: (renderId: string, name?: string) => Promise<void>;
-  onUploadToFolio: (file: File, name: string) => Promise<void>;
-  selectedFolioClipId?: string;
-  onSelectFolioClip: (id: string | undefined) => void;
-  onOpenFolio: () => void;
+  folioClips?: FolioClip[];
 };
 
 export function StudioPanel({
@@ -127,13 +121,7 @@ export function StudioPanel({
   onGuideLibraryUpdated,
   onRateRender,
   tasteProfileVersion,
-  folioClips,
-  onRemoveFolioClip,
-  onAddToFolio,
-  onUploadToFolio,
-  selectedFolioClipId,
-  onSelectFolioClip,
-  onOpenFolio
+  folioClips
 }: Props) {
   const [lyrics, setLyrics] = useState('Layer me in prismatic light...');
   const [stylePrompt, setStylePrompt] = useState('holographic croon, velvet aggression');
@@ -167,9 +155,7 @@ export function StudioPanel({
   const [customMintMode, setCustomMintMode] = useState<'glitch' | 'dream' | 'anthem'>('glitch');
   const [mintDuration, setMintDuration] = useState<number>(12);
   const [voiceControlsOpen, setVoiceControlsOpen] = useState(false);
-  const [folioSearch, setFolioSearch] = useState('');
   const [effectsOpen, setEffectsOpen] = useState(false);
-  const [savingToFolio, setSavingToFolio] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   // Simple/Advanced mode and presets
@@ -196,7 +182,7 @@ export function StudioPanel({
   };
   const activePersona = personas.find((p) => p.id === activePersonaId);
   const guideSamples = activePersona?.guide_samples ?? [];
-  const hasGuideSelection = Boolean(selectedGuideSampleId || guide || selectedFolioClipId);
+  const hasGuideSelection = Boolean(selectedGuideSampleId || guide);
 
   useEffect(() => {
     if (prefill) {
@@ -284,8 +270,7 @@ export function StudioPanel({
           guideUseLyrics,
           guideTempo,
           guide,
-          folioClipId: selectedFolioClipId
-        });
+                  });
         const abSlot: ABSlot = {
           url: result.audioUrl,
           controls: { ...controls },
@@ -342,8 +327,7 @@ export function StudioPanel({
         guideUseLyrics,
         guideTempo,
         guide,
-        folioClipId: selectedFolioClipId
-      });
+              });
       setOutputUrl(result.audioUrl);
       onRenderComplete(result.render);
       setLatestRender(result.render);
@@ -375,8 +359,7 @@ export function StudioPanel({
         guideTempo,
         guide,
         previewSeconds: 12,
-        folioClipId: selectedFolioClipId
-      });
+              });
       setPreviewUrl(result.audioUrl);
       sendSonicSignal('preview', undefined, {
         personaId: activePersonaId,
@@ -641,60 +624,8 @@ export function StudioPanel({
                 Guide Vocal (Optional)
               </label>
               <GuideDropzone onFile={setGuide} />
-              {/* Quick Folio picker */}
-              {folioClips.length > 0 && !selectedFolioClipId && !guide && (
-                <div className="mt-2 rounded-lg border border-border-default bg-elevated p-2">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-[10px] uppercase tracking-wide text-muted">Or pick from Folio</p>
-                    <button
-                      type="button"
-                      onClick={onOpenFolio}
-                      className="text-[10px] font-medium text-accent hover:underline"
-                    >
-                      Browse All
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search folio..."
-                    value={folioSearch}
-                    onChange={(e) => setFolioSearch(e.target.value)}
-                    className="mb-2 w-full rounded border border-border-default bg-canvas px-2 py-1.5 text-xs text-primary placeholder-muted focus:border-accent focus:outline-none"
-                  />
-                  <div className="max-h-32 space-y-1 overflow-y-auto">
-                    {folioClips
-                      .filter((clip) =>
-                        !folioSearch.trim() ||
-                        clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
-                        clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
-                      )
-                      .slice(0, folioSearch.trim() ? 8 : 4)
-                      .map((clip) => (
-                        <button
-                          key={clip.id}
-                          type="button"
-                          onClick={() => {
-                            onSelectFolioClip(clip.id);
-                            setSelectedGuideSampleId(undefined);
-                            setFolioSearch('');
-                          }}
-                          className="flex w-full items-center gap-2 rounded border border-transparent bg-canvas px-2 py-1.5 text-left transition hover:border-accent/30 hover:bg-accent/5"
-                        >
-                          <BookmarkIcon size={10} className="shrink-0 text-muted" />
-                          <span className="flex-1 truncate text-xs text-primary">{clip.name}</span>
-                        </button>
-                      ))}
-                    {folioSearch.trim() && folioClips.filter((clip) =>
-                      clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
-                      clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
-                    ).length === 0 && (
-                      <p className="py-1 text-center text-[10px] text-muted">No matches</p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
-            {guide && (
+            {guide && activePersonaId && (
               <div className="flex flex-col gap-2 rounded-xl border border-border-default bg-surface p-3">
                 <p className="text-[11px] uppercase tracking-wide text-muted">Save uploaded clip</p>
                 <input
@@ -703,33 +634,13 @@ export function StudioPanel({
                   value={guideName}
                   onChange={(e) => setGuideName(e.target.value)}
                 />
-                <div className="flex gap-2">
-                  {activePersonaId && (
-                    <button
-                      onClick={handleSaveGuideSample}
-                      disabled={savingGuide}
-                      className="flex-1 rounded-lg border border-border-default px-3 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {savingGuide ? 'Saving...' : 'Save to Persona'}
-                    </button>
-                  )}
-                  <button
-                    onClick={async () => {
-                      if (!guide) return;
-                      setSavingToFolio(true);
-                      try {
-                        await onUploadToFolio(guide, guideName || guide.name);
-                        setGuideName('');
-                      } finally {
-                        setSavingToFolio(false);
-                      }
-                    }}
-                    disabled={savingToFolio}
-                    className="flex-1 rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium uppercase tracking-wide text-accent transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {savingToFolio ? 'Saving...' : 'Save to Folio'}
-                  </button>
-                </div>
+                <button
+                  onClick={handleSaveGuideSample}
+                  disabled={savingGuide}
+                  className="rounded-lg border border-border-default px-3 py-2 text-xs font-medium uppercase tracking-wide text-secondary transition hover:border-border-emphasis disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {savingGuide ? 'Saving...' : 'Save to Voice Library'}
+                </button>
               </div>
             )}
             {(guideSamples.length > 0 || guide) && (
@@ -894,128 +805,6 @@ export function StudioPanel({
                 )}
               </div>
             )}
-            {/* Folio Guide Selection */}
-            <div className="rounded-xl border border-accent/30 bg-accent/5 p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookmarkIcon size={14} className="text-accent" />
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-accent">Folio</p>
-                  {folioClips.length > 0 && (
-                    <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                      {folioClips.length}
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={onOpenFolio}
-                  className="rounded-lg border border-accent/30 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-accent transition hover:border-accent hover:bg-accent/10"
-                >
-                  Open Folio
-                </button>
-              </div>
-
-              {/* Active folio guide */}
-              {selectedFolioClipId && (() => {
-                const activeClip = folioClips.find((c) => c.id === selectedFolioClipId);
-                return activeClip ? (
-                  <div className="mt-3 rounded-xl border border-accent bg-accent/10 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <BookmarkIcon size={12} className="text-accent" />
-                        <span className="text-sm font-medium text-accent">{activeClip.name}</span>
-                        <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-semibold text-canvas">Active Guide</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onSelectFolioClip(undefined)}
-                        className="text-[11px] font-medium text-accent/70 transition hover:text-accent"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="mt-2">
-                      <AudioPlayer
-                        src={activeClip.audioUrl.startsWith('http') ? activeClip.audioUrl : `${API_HOST}${activeClip.audioUrl}`}
-                        label={activeClip.name}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
-              {/* Folio Browser */}
-              {!selectedFolioClipId && (
-                <div className="mt-3 rounded-lg border border-border-default bg-elevated p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-                      Folio {folioClips.length > 0 && `(${folioClips.length})`}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={onOpenFolio}
-                      className="text-[10px] font-medium text-accent hover:underline"
-                    >
-                      {folioClips.length > 0 ? 'Manage' : 'Open'}
-                    </button>
-                  </div>
-
-                  {folioClips.length > 0 ? (
-                    <>
-                      <input
-                        type="text"
-                        placeholder="Search clips..."
-                        value={folioSearch}
-                        onChange={(e) => setFolioSearch(e.target.value)}
-                        className="mb-2 w-full rounded border border-border-default bg-canvas px-2.5 py-1.5 text-xs text-primary placeholder-muted focus:border-accent focus:outline-none"
-                      />
-                      <div className="max-h-40 space-y-1 overflow-y-auto">
-                        {folioClips
-                          .filter((clip) =>
-                            !folioSearch.trim() ||
-                            clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
-                            clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
-                          )
-                          .slice(0, folioSearch.trim() ? 12 : 6)
-                          .map((clip) => (
-                            <button
-                              key={clip.id}
-                              type="button"
-                              onClick={() => {
-                                onSelectFolioClip(clip.id);
-                                setSelectedGuideSampleId(undefined);
-                                setGuide(undefined);
-                                setFolioSearch('');
-                              }}
-                              className="flex w-full items-center gap-2 rounded border border-transparent bg-canvas px-2 py-1.5 text-left transition hover:border-accent/30 hover:bg-accent/5"
-                            >
-                              <BookmarkIcon size={10} className="shrink-0 text-muted" />
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs font-medium text-primary">{clip.name}</p>
-                                <p className="truncate text-[9px] text-muted">
-                                  {clip.sourcePersonaName || (clip.source === 'render' ? 'Render' : 'Upload')}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
-                        {folioSearch.trim() && folioClips.filter((clip) =>
-                          clip.name.toLowerCase().includes(folioSearch.toLowerCase()) ||
-                          clip.sourcePersonaName?.toLowerCase().includes(folioSearch.toLowerCase())
-                        ).length === 0 && (
-                          <p className="py-2 text-center text-[10px] text-muted">No matches for "{folioSearch}"</p>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="py-3 text-center">
-                      <BookmarkIcon size={16} className="mx-auto mb-1 text-muted" />
-                      <p className="text-[10px] text-muted">No clips in folio</p>
-                      <p className="text-[9px] text-muted">Save renders or upload clips</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
 
             {/* Suggested Clips — collapsible with horizontal scroll */}
             <div className="rounded-xl border border-border-default bg-surface">

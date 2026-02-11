@@ -17,22 +17,18 @@ import {
   rateRenderJob,
   updateRenderLabel,
   updateRenderPersona,
-  fetchFolioClips,
-  addToFolio,
-  removeFromFolio,
-  deleteGuideSample,
+  saveRenderAsGuide,
   sendSonicSignal
 } from './lib/api';
-import { FolioTab } from './components/FolioTab';
 import { DownloadsTab } from './components/DownloadsTab';
 import { EditPersonaModal } from './components/EditPersonaModal';
 import { VoiceTrainingModal } from './components/VoiceTrainingModal';
 import { AudioProvider } from './contexts/AudioContext';
-import { LogoIcon, MicIcon, FolderIcon, BookmarkIcon, ShieldIcon, ImageIcon } from './components/Icons';
+import { LogoIcon, MicIcon, FolderIcon, ShieldIcon, LibraryIcon } from './components/Icons';
 import { BovedaTab } from './components/boveda/BovedaTab';
-import { BrowseTab } from './components/BrowseTab';
+import { VoiceLibraryTab } from './components/VoiceLibraryTab';
 
-type TabId = 'studio' | 'folio' | 'downloads' | 'browse' | 'boveda';
+type TabId = 'studio' | 'library' | 'downloads' | 'boveda';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('studio');
@@ -45,8 +41,6 @@ export default function App() {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [trainingPersona, setTrainingPersona] = useState<Persona | null>(null);
   const [tasteProfileVersion, setTasteProfileVersion] = useState(0);
-  const [folioClips, setFolioClips] = useState<FolioClip[]>([]);
-  const [selectedFolioClipId, setSelectedFolioClipId] = useState<string | undefined>(undefined);
   const [brandName, setBrandName] = useState<'voxa' | 'splurgle'>('voxa');
 
   function handlePrefillConsumed() {
@@ -56,7 +50,6 @@ export default function App() {
   useEffect(() => {
     refresh();
     refreshDownloads();
-    refreshFolio();
   }, []);
 
   async function refresh() {
@@ -102,25 +95,10 @@ export default function App() {
     setRenderHistory(history);
   }
 
-  async function refreshFolio() {
-    const clips = await fetchFolioClips();
-    setFolioClips(clips);
-  }
-
-  async function handleAddToFolio(renderId: string, name?: string) {
-    const clip = await addToFolio({ renderId, name });
-    setFolioClips((prev) => [clip, ...prev]);
-    sendSonicSignal('save_to_folio', renderId);
-  }
-
-  async function handleRemoveFromFolio(id: string) {
-    await removeFromFolio(id);
-    setFolioClips((prev) => prev.filter((c) => c.id !== id));
-  }
-
-  async function handleUploadToFolio(file: File, name: string) {
-    const clip = await addToFolio({ audio: file, name });
-    setFolioClips((prev) => [clip, ...prev]);
+  async function handleSaveAsGuide(personaId: string, renderId: string, name?: string) {
+    await saveRenderAsGuide(personaId, renderId, name);
+    sendSonicSignal('use_guide', renderId, { personaId, source: 'render' });
+    await refresh(); // Refresh to update guide samples
   }
 
   function handleRenderComplete(job: RenderHistoryItem) {
@@ -161,7 +139,7 @@ export default function App() {
   const activePersona = personas.find((p) => p.id === activePersonaId);
   const activePersonaImage = activePersona?.image_url ? `${API_HOST}${activePersona.image_url}` : undefined;
 
-  // Combine folio clips with guide samples from all personas
+  // Collect guide samples from all personas as clips (for StudioPanel compatibility)
   const allClips = useMemo(() => {
     const guideSamplesAsClips: FolioClip[] = [];
 
@@ -183,18 +161,19 @@ export default function App() {
       }
     }
 
-    return [...folioClips, ...guideSamplesAsClips];
-  }, [personas, folioClips]);
+    return guideSamplesAsClips;
+  }, [personas]);
 
   const objectPositionStyle = (persona?: Persona) => ({
     objectPosition: `${persona?.image_focus_x ?? 50}% ${persona?.image_focus_y ?? 50}%`
   });
 
+  const totalGuideSamples = personas.reduce((sum, p) => sum + (p.guide_samples?.length ?? 0), 0);
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'studio', label: 'Studio', icon: <MicIcon size={14} /> },
-    { id: 'folio', label: 'Folio', icon: <BookmarkIcon size={14} />, count: allClips.length },
+    { id: 'library', label: 'Voice Library', icon: <LibraryIcon size={14} />, count: totalGuideSamples },
     { id: 'downloads', label: 'Downloads', icon: <FolderIcon size={14} />, count: renderHistory.length },
-    { id: 'browse', label: 'Browse', icon: <ImageIcon size={14} /> },
     { id: 'boveda', label: 'Boveda', icon: <ShieldIcon size={14} /> },
   ];
 
@@ -411,12 +390,6 @@ export default function App() {
                       onRateRender={handleRateRender}
                       tasteProfileVersion={tasteProfileVersion}
                       folioClips={allClips}
-                      onRemoveFolioClip={handleRemoveFromFolio}
-                      onAddToFolio={handleAddToFolio}
-                      onUploadToFolio={handleUploadToFolio}
-                      selectedFolioClipId={selectedFolioClipId}
-                      onSelectFolioClip={setSelectedFolioClipId}
-                      onOpenFolio={() => setActiveTab('folio')}
                     />
                   </div>
                 ) : (
@@ -446,21 +419,11 @@ export default function App() {
             </div>
           )}
 
-          {/* Folio Tab */}
-          {activeTab === 'folio' && (
-            <FolioTab
-              clips={allClips}
-              selectedClipId={selectedFolioClipId}
-              onSelectClip={(id) => {
-                setSelectedFolioClipId(id);
-                setActiveTab('studio');
-              }}
-              onRemoveClip={handleRemoveFromFolio}
-              onRemoveGuideSample={async (personaId, sampleId) => {
-                await deleteGuideSample(personaId, sampleId);
-                await refresh(); // Refresh personas to update guide_samples
-              }}
-              onUploadClip={handleUploadToFolio}
+          {/* Voice Library Tab */}
+          {activeTab === 'library' && (
+            <VoiceLibraryTab
+              personas={personas}
+              onRefresh={refresh}
             />
           )}
 
@@ -479,12 +442,9 @@ export default function App() {
               onRateJob={handleRateRender}
               onRenameJob={handleRenameRender}
               onChangePersona={handleChangeRenderPersona}
-              onAddToFolio={handleAddToFolio}
+              onSaveAsGuide={handleSaveAsGuide}
             />
           )}
-
-          {/* Browse Tab */}
-          {activeTab === 'browse' && <BrowseTab />}
 
           {/* Boveda Tab */}
           {activeTab === 'boveda' && (

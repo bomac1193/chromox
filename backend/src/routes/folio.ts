@@ -53,6 +53,54 @@ router.post('/folio', async (req, res) => {
   }
 });
 
+// Import from external sources (Slag, etc.)
+router.post('/folio/import', async (req, res) => {
+  try {
+    const { source, audio_url, name, license, license_url, attribution, slag_match_score, original_source, tags } = req.body;
+
+    if (!audio_url || !name) {
+      return res.status(400).json({ error: 'Missing audio_url or name' });
+    }
+
+    // Download audio from external URL first
+    const fs = await import('fs');
+    const path = await import('path');
+    const fetch = (await import('node-fetch')).default;
+
+    console.log(`[Folio] Downloading audio from ${audio_url}`);
+    const audioRes = await fetch(audio_url);
+    if (!audioRes.ok) {
+      return res.status(400).json({ error: `Failed to download audio: ${audioRes.status}` });
+    }
+
+    // Save to temp file
+    const ext = path.extname(new URL(audio_url).pathname) || '.mp3';
+    const tempDir = path.join(process.cwd(), 'folio_cache');
+    fs.mkdirSync(tempDir, { recursive: true });
+    const tempPath = path.join(tempDir, `import_${Date.now()}${ext}`);
+    const buffer = Buffer.from(await audioRes.arrayBuffer());
+    fs.writeFileSync(tempPath, buffer);
+
+    const clip = await addFolioClip({
+      name,
+      audioPath: tempPath,
+      audioUrl: audio_url,
+      source: 'upload',
+      tags: tags || [],
+    });
+
+    // Store extra metadata (could extend FolioClip type later)
+    console.log(`[Folio] Imported from ${source}: ${name} (${license})`);
+    console.log(`[Folio] Original source: ${original_source}, Score: ${slag_match_score}`);
+    if (attribution) console.log(`[Folio] Attribution: ${attribution}`);
+
+    res.json(clip);
+  } catch (error) {
+    console.error('[Folio] Failed to import clip', error);
+    res.status(500).json({ error: 'Failed to import clip' });
+  }
+});
+
 router.delete('/folio/:id', async (req, res) => {
   try {
     const removed = await removeFolioClip(req.params.id);

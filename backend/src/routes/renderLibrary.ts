@@ -9,6 +9,7 @@ import { defaultEffectSettings } from '../services/effectsProcessor';
 import { ensureLocalAudio } from '../services/folioStore';
 import { recordSonicSignal } from '../services/sonicGenomeStore';
 import { addRelicToPersona } from '../services/personaStore';
+import { recordSampleFeedback } from '../services/sampleEffectiveness';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -161,6 +162,15 @@ router.post('/renders/:id/rating', (req, res) => {
     }
   } catch (e) {
     console.warn('[SonicGenome] Failed to record rating signal', e);
+  }
+
+  // Track sample feedback for effectiveness scoring
+  if (updated.guideSampleId && (rating === 'like' || rating === 'dislike')) {
+    try {
+      recordSampleFeedback(updated.personaId, updated.guideSampleId, rating);
+    } catch (e) {
+      console.warn('[SampleEffectiveness] Failed to record sample feedback', e);
+    }
   }
 
   res.json(updated);

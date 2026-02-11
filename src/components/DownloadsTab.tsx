@@ -22,7 +22,7 @@ type Props = {
   onRateJob: (jobId: string, rating: 'like' | 'dislike' | 'neutral') => Promise<void>;
   onRenameJob: (jobId: string, label: string) => Promise<void>;
   onChangePersona: (jobId: string, personaId: string) => Promise<void>;
-  onAddToFolio: (renderId: string, name?: string) => Promise<void>;
+  onSaveAsGuide: (personaId: string, renderId: string, name?: string) => Promise<void>;
 };
 
 export function DownloadsTab({
@@ -34,7 +34,7 @@ export function DownloadsTab({
   onRateJob,
   onRenameJob,
   onChangePersona,
-  onAddToFolio
+  onSaveAsGuide
 }: Props) {
   const [search, setSearch] = useState('');
   const [personaFilter, setPersonaFilter] = useState<string>('all');
@@ -43,8 +43,8 @@ export function DownloadsTab({
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [ratingBusyId, setRatingBusyId] = useState<string | null>(null);
-  const [folioBusyId, setFolioBusyId] = useState<string | null>(null);
-  const [folioSavedIds, setFolioSavedIds] = useState<Set<string>>(new Set());
+  const [guideBusyId, setGuideBusyId] = useState<string | null>(null);
+  const [guideSavedIds, setGuideSavedIds] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
@@ -82,13 +82,14 @@ export function DownloadsTab({
     setChangingPersonaId(jobId);
     try {
       await onChangePersona(jobId, personaId);
-      await refreshJobs();
+      // onChangePersona already updates the state in App.tsx
+      // No need to call refreshJobs() which could cause timing issues
     } catch (err) {
       console.error('Failed to change persona:', err);
     } finally {
+      setChangingPersonaId(null);
       setEditingPersonaId(null);
       setSelectedNewPersonaId(null);
-      setChangingPersonaId(null);
     }
   }
 
@@ -351,11 +352,11 @@ export function DownloadsTab({
               {/* Header */}
               <div className="mb-2">
                 {editingPersonaId === job.id ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <select
                       value={selectedNewPersonaId || job.personaId}
                       onChange={(e) => setSelectedNewPersonaId(e.target.value)}
-                      className="rounded border border-accent bg-canvas px-1 py-0.5 text-[10px] uppercase tracking-wider text-primary outline-none focus:ring-1 focus:ring-accent"
+                      className="min-w-0 flex-1 truncate rounded border border-accent bg-canvas px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary outline-none focus:ring-1 focus:ring-accent"
                     >
                       {personas.map((p) => (
                         <option key={p.id} value={p.id}>{p.name}</option>
@@ -363,23 +364,24 @@ export function DownloadsTab({
                     </select>
                     <button
                       onClick={() => {
-                        if (selectedNewPersonaId && selectedNewPersonaId !== job.personaId) {
-                          handleChangePersona(job.id, selectedNewPersonaId);
+                        const newId = selectedNewPersonaId;
+                        if (newId) {
+                          handleChangePersona(job.id, newId);
                         } else {
                           setEditingPersonaId(null);
                           setSelectedNewPersonaId(null);
                         }
                       }}
                       disabled={changingPersonaId === job.id}
-                      className="rounded bg-accent px-2 py-0.5 text-[9px] font-medium text-canvas hover:bg-accent-hover disabled:opacity-50"
+                      className="shrink-0 rounded bg-accent px-2 py-0.5 text-[9px] font-medium text-canvas hover:bg-accent-hover disabled:opacity-50"
                     >
                       {changingPersonaId === job.id ? '...' : 'Save'}
                     </button>
                     <button
                       onClick={() => { setEditingPersonaId(null); setSelectedNewPersonaId(null); }}
-                      className="rounded border border-border-default px-2 py-0.5 text-[9px] font-medium text-muted hover:text-primary"
+                      className="shrink-0 rounded border border-border-default px-1.5 py-0.5 text-[9px] font-medium text-muted hover:text-primary"
                     >
-                      Cancel
+                      ✕
                     </button>
                   </div>
                 ) : (
@@ -476,18 +478,18 @@ export function DownloadsTab({
                 <button
                   type="button"
                   onClick={async () => {
-                    setFolioBusyId(job.id);
+                    setGuideBusyId(job.id);
                     try {
-                      await onAddToFolio(job.id, job.label || job.personaName);
-                      setFolioSavedIds((prev) => new Set(prev).add(job.id));
+                      await onSaveAsGuide(job.personaId, job.id, job.label || job.personaName);
+                      setGuideSavedIds((prev) => new Set(prev).add(job.id));
                     } finally {
-                      setFolioBusyId(null);
+                      setGuideBusyId(null);
                     }
                   }}
-                  disabled={folioBusyId === job.id || folioSavedIds.has(job.id)}
+                  disabled={guideBusyId === job.id || guideSavedIds.has(job.id)}
                   className="rounded-full border border-border-default px-2 py-0.5 text-[10px] font-medium text-secondary transition hover:border-border-emphasis disabled:opacity-40"
                 >
-                  {folioSavedIds.has(job.id) ? 'Saved' : folioBusyId === job.id ? '...' : 'Folio'}
+                  {guideSavedIds.has(job.id) ? 'Saved' : guideBusyId === job.id ? '...' : 'Use as Guide'}
                 </button>
               </div>
 

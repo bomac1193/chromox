@@ -40,7 +40,7 @@ export type GuideSample = {
   path: string;
   url?: string;
   uploaded_at: string;
-  source?: 'user' | 'ai-lab';
+  source?: 'user' | 'ai-lab' | 'folio';
   tags?: string[];
   transcript?: string;
   embedding?: number[];
@@ -49,6 +49,20 @@ export type GuideSample = {
   aiModel?: string;
   recommendedUse?: string;
   mintedFromRenderId?: string;
+  folioCollectionId?: string;
+  folioVideoUrl?: string;
+  accentMetadata?: {
+    detected: string;
+    confidence: number;
+    language: string;
+    dialect?: string;
+  };
+  // Effectiveness tracking
+  useCount?: number;
+  likeCount?: number;
+  dislikeCount?: number;
+  effectivenessScore?: number;
+  lastUsedAt?: string;
 };
 
 export type VoiceProfile = {
@@ -279,4 +293,57 @@ export type TasteProfile = {
   energeticPreference: number;
   glitchAffinity: number;
   recommendedMintMode: 'glitch' | 'dream' | 'anthem';
+};
+
+// ── Photo Gallery ─────────────────────────────────────────────────────
+
+export type PhotoElements = {
+  clothingType?: string[];
+  pose?: string;
+  mood?: string;
+  setting?: string;
+  lighting?: string;
+  tags?: string[];
+};
+
+export type PhotoMetadata = {
+  id: string;
+  filename: string;
+  originalPath: string;
+  relativePath: string;
+  thumb150Path?: string;
+  thumb400Path?: string;
+  thumb150Url?: string;
+  thumb400Url?: string;
+  width?: number;
+  height?: number;
+  fileSize: number;
+  mimeType: string;
+  dominantColors: string[];
+  colorCategory?: string;
+  perceptualHash?: string;
+  elements?: PhotoElements;
+  createdAt: string;
+  addedAt: string;
+  lastModified: string;
+};
+
+export type PhotoGallerySettings = {
+  selectedFolder?: string;
+  lastSyncTime?: string;
+  thumbnailsGenerated: number;
+  totalPhotos: number;
+};
+
+export type PhotoScanResult = {
+  added: number;
+  updated: number;
+  removed: number;
+  errors: string[];
+  totalProcessed: number;
+};
+
+export type SimilarityMatch = {
+  photo: PhotoMetadata;
+  similarity: number;
 };
